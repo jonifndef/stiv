@@ -1,0 +1,3 @@
+# stiv - simple terminal image viewer
+
+- Tbd...
