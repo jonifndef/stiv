@@ -1,6 +1,7 @@
 use clap::Parser;
 use std::io::{self, Write};
 use base64::{prelude::BASE64_STANDARD, Engine};
+use crossterm::terminal::{self, window_size};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -13,7 +14,17 @@ pub struct Args {
 fn main() -> Result<(), std::io::Error> {
     let args = Args::parse();
 
-    let control_data = b"f=100,t=f,a=T;";
+    let (cols, rows) = terminal::size().map(|(c,r)|(c/2, r/2))?;
+
+    println!("cols: {}, rows: {}", cols, rows);
+
+    let window_size = terminal::window_size()?;
+    let img_width = window_size.width / 2;
+
+    //let control_data = b"f=100,t=f,a=T,s=33,v=11;";
+    //let control_data = format!("f=100,t=f,a=T,c={cols},r={rows};").into_bytes();
+    let control_data = format!("f=100,t=f,a=T,c={cols};").into_bytes();
+    //let control_data = format!("f=100,t=f,a=T,w={img_width};").into_bytes();
     //let payload = std::fs::read(args.file)?;
     let payload = args.file.as_bytes().to_vec();
 
