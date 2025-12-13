@@ -11,6 +11,22 @@ pub struct Args {
     file: String,
 }
 
+struct Rect {
+    width_px: u16,
+    height_px: u16
+}
+
+fn get_cell_size() -> Result<Rect, std::io::Error> {
+    let window_size = terminal::window_size()?;
+
+    let cell_size = Rect {
+        width_px: (window_size.width / window_size.columns),
+        height_px: (window_size.height / window_size.rows)
+    };
+
+    Ok(cell_size)
+}
+
 fn main() -> Result<(), std::io::Error> {
     let args = Args::parse();
 
