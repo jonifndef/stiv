@@ -1,7 +1,8 @@
 use clap::Parser;
-use std::io::{self, Write};
+use std::{error, io::{self, Write}};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use crossterm::terminal::{self, window_size};
+use imagesize::{size, ImageError};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -12,19 +13,29 @@ pub struct Args {
 }
 
 struct Rect {
-    width_px: u16,
-    height_px: u16
+    width: u16,
+    height: u16
 }
 
-fn get_cell_size() -> Result<Rect, std::io::Error> {
+fn get_cell_size_px() -> Result<Rect, std::io::Error> {
     let window_size = terminal::window_size()?;
 
     let cell_size = Rect {
-        width_px: (window_size.width / window_size.columns),
-        height_px: (window_size.height / window_size.rows)
+        width: (window_size.width / window_size.columns),
+        height: (window_size.height / window_size.rows)
     };
 
     Ok(cell_size)
+}
+
+fn get_rows_and_cols_for_image(image_path: &str, _scale_in_percent: u8) -> Result<Rect, ImageError> {
+    // Get the width and height of image
+    let (w, h) = size(image_path).map(|img_size| (img_size.width, img_size.height))?;
+    // Find which is largest, this one is supposed to be scaled by "scale_in_percent"
+    // Multiply this side with percent, then divide the result with cell_size
+    // Do the same for the other side
+
+    Ok(Rect { width: 0, height: 0 })
 }
 
 fn main() -> Result<(), std::io::Error> {
