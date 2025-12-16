@@ -1,7 +1,7 @@
 use clap::Parser;
 use std::{error, io::{self, Write}};
 use base64::{prelude::BASE64_STANDARD, Engine};
-use crossterm::terminal::{self, window_size};
+use crossterm::terminal::{self, window_size, WindowSize};
 use imagesize::{size, ImageError};
 
 #[derive(Parser, Debug)]
@@ -17,23 +17,27 @@ struct Rect {
     height: u16
 }
 
-fn get_cell_size_px() -> Result<Rect, std::io::Error> {
-    let window_size = terminal::window_size()?;
-
+fn get_term_cell_size_px(window_size: &WindowSize) -> Rect {
     let cell_size = Rect {
         width: (window_size.width / window_size.columns),
         height: (window_size.height / window_size.rows)
     };
 
-    Ok(cell_size)
+    cell_size
 }
 
-fn get_rows_and_cols_for_image(image_path: &str, _scale_in_percent: u8) -> Result<Rect, ImageError> {
+fn get_image_rows_and_cols(image_path: &str, window_size: &WindowSize, scale_in_percent: u8) -> Result<Rect, ImageError> {
     // Get the width and height of image
-    let (w, h) = size(image_path).map(|img_size| (img_size.width, img_size.height))?;
-    // Find which is largest, this one is supposed to be scaled by "scale_in_percent"
-    // Multiply this side with percent, then divide the result with cell_size
-    // Do the same for the other side
+    let (img_width_px, img_height_px) = size(image_path).map(|img_size| (img_size.width, img_size.height))?;
+    // Check if any side of the image is longer than "scale_in_percent".
+    if ((img_width_px as u16) > (window_size.width * ((scale_in_percent as u16) / 100))) || ((img_height_px as u16) > (window_size.height * ((scale_in_percent as u16) / 100))) {
+        // If so, multiply both sides with percent, then divide the result with cell_size
+        // Bonus: Do we want to be able to specify a dimension of the image to scale?
+        // As in: "scale img height by 70%" or "scale image width by 35%"
+        // This block does not support that scenario.
+    }
+    println!("w: {}", img_width);
+    println!("h: {}", img_height);
 
     Ok(Rect { width: 0, height: 0 })
 }
