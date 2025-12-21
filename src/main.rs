@@ -1,8 +1,9 @@
 use clap::Parser;
 use std::{error, io::{self, Write}};
 use base64::{prelude::BASE64_STANDARD, Engine};
-use crossterm::terminal::{self, window_size, WindowSize};
+use crossterm::terminal::{self, Event, window_size, WindowSize};
 use imagesize::{size, ImageError};
+use ratatui::{DefaultTerminal, Frame};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
