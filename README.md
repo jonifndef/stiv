@@ -7,5 +7,6 @@
 - [ ] Zoom, pan, rotate
 - [ ] Zoom in gallery mode to increase, decrease thumbnail size
 - [ ] Copy image or image name
+- [ ] When opened in a dir with multiple images, support goto next/previous while viewing single image
 ### Possible future features:
 - [ ] See subdirectories in tree-like browser in marigin window
