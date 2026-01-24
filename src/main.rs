@@ -3,8 +3,9 @@ use std::{error, io::{self, Write}};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use crossterm::terminal::{self, window_size, WindowSize};
 use imagesize::{size, ImageError};
+use stiv_image::StivImage;
 
-mod tui;
+mod app;
 mod stiv_image;
 mod win_info;
 
@@ -47,34 +48,9 @@ fn get_image_rows_and_cols(image_path: &str, window_size: &WindowSize, scaling_p
 fn main() -> Result<(), anyhow::Error> {
     let args = Args::parse();
 
-    tui::run(&args.file)?;
-
-    //let (cols, rows) = terminal::size().map(|(c,r)|(c/2, r/2))?;
-
-    //println!("cols: {}, rows: {}", cols, rows);
-
-    //let window_size = terminal::window_size()?;
-    //let img_width = window_size.width / 2;
-
-    //let control_data = b"f=100,t=f,a=T;";
-    ////let control_data = format!("f=100,t=f,a=T,c={cols},r={rows};").into_bytes();
-    ////let control_data = format!("f=100,t=f,a=T,c={cols};").into_bytes();
-    ////let control_data = format!("f=100,t=f,a=T,w={img_width};").into_bytes();
-    ////let payload = std::fs::read(args.file)?;
-    //let payload = args.file.as_bytes().to_vec();
-
-    //let prefix = b"\\x1b_G";
-    //let suffix = b"\\x1b\\";
-
-    //let mut out_buf: Vec<u8> = vec![];
-    //out_buf.extend(prefix);
-    //out_buf.extend(control_data);
-    //out_buf.extend(BASE64_STANDARD.encode(payload).as_bytes());
-    //out_buf.extend(suffix);
-
-    //let mut stdout = io::stdout();
-    //stdout.write_all(&out_buf)?;
-    //stdout.flush()?;
+    //app::run(&args.file)?;
+    let img = StivImage::new(args.file)?;
+    img.draw()?;
 
     Ok(())
 }
