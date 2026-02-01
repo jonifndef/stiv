@@ -2,6 +2,9 @@ use imagesize::{size, ImageError};
 use crate::win_info::WinInfo;
 use base64::{prelude::BASE64_STANDARD, Engine};
 use std::{error, io::{self, Write}};
+use std::io::Cursor;
+use image::ImageReader;
+use itertools::{Itertools, Position};
 
 // Some notes:
 // If we are running in Kitty terminal, use only the cols OR rows argument in the control data, the
@@ -9,12 +12,12 @@ use std::{error, io::{self, Write}};
 // E.g.
 //      let control_data = format!("f=100,t=f,a=T,c={cols};", cols=self.cols).into_bytes();
 // However, if we are running on another kitty-supporting terminal, like wezterm or ghostty
-// (unknown how it works), we need to provide both, as no dynamic scaling happens.
+// (unknown how ghostty does it), we need to provide both, as no dynamic scaling happens.
 // E.g.
 //      let control_data = format!("f=100,t=f,a=T,c={cols},r={rows};", cols=self.cols, rows=self.rows).into_bytes();
 
-const PREFIX: &'static [u8; 6] = b"\\x1b_G";
-const SUFFIX: &'static [u8; 5] = b"\\x1b\\";
+const PREFIX: &'static [u8; 3] = b"\x1b_G";
+const SUFFIX: &'static [u8; 2] = b"\x1b\\";
 
 pub struct StivImage {
     path: String,
@@ -42,21 +45,63 @@ impl StivImage {
     }
 
     pub fn draw(&self) -> Result<(), anyhow::Error> {
-        let control_data = b"f=100,t=f,a=T;";
-        let payload = self.path.as_bytes().to_vec();
+        let img_rbg = image::open(&self.path)?.into_rgb8();
+        let width = img_rbg.width();
+        let height = img_rbg.height();
+        let img_rgb_raw = img_rbg.into_raw();
+        let encoded = BASE64_STANDARD.encode(img_rgb_raw);
 
-        let prefix = b"\x1b_G";
-        let suffix = b"\x1b\\";
-
-        let mut out_buf: Vec<u8> = vec![];
-        out_buf.extend(prefix);
-        out_buf.extend(control_data);
-        out_buf.extend(BASE64_STANDARD.encode(payload).as_bytes());
-        out_buf.extend(suffix);
-
+        let mut m = 1;
+        let chunk_itr = encoded.as_bytes().chunks(4096).with_position();
         let mut stdout = io::stdout();
-        stdout.write_all(&out_buf)?;
+        let mut out_buf: Vec<u8> = Vec::from([]);
+        for (pos, chunk) in chunk_itr {
+            out_buf.extend(PREFIX);
+            if pos == Position::First {
+                out_buf.extend(b"a=T,");
+            }
+            if pos == Position::Last {
+                m = 0;
+            }
+
+            let control_data = format!("f=24,s={width},v={height},m={m};").into_bytes();
+            out_buf.extend(control_data);
+            out_buf.extend(chunk);
+            out_buf.extend(SUFFIX);
+
+            stdout.write_all(&out_buf)?;
+        }
+
         stdout.flush()?;
+
+        //let mut chunk_itr = encoded.as_bytes().chunks(4096).peekable();
+        //while let Some(chunk) = chunk_itr.next() {
+        //    if chunk_itr.peek().is_none() {
+        //        println!("It's Nooone!");
+        //    }
+        //    println!("{:?}", chunk);
+        //}
+        //while index < encoded.len() {
+        //    let data = encoded[index:];
+        //}
+
+        //let protocol_msg = b"f=24,s={width},v={height},m={m};{chunk}\x1b\\";
+
+        //let control_data = b"f=100,t=f,a=T;";
+        //let payload = self.path.as_bytes().to_vec();
+
+        //let prefix = b"\x1b_G";
+        //let suffix = b"\x1b\\";
+
+        //let mut out_buf: Vec<u8> = vec![];
+        //out_buf.extend(prefix);
+        //out_buf.extend(control_data);
+        //out_buf.extend(BASE64_STANDARD.encode(img_rbg_raw).as_bytes());
+        //out_buf.extend(suffix);
+
+        //let mut stdout = io::stdout();
+        //stdout.write_all(&out_buf)?;
+        //stdout.flush()?;
         Ok(())
     }
 }

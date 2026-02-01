@@ -8,6 +8,8 @@ anyhow = "1.0.100"
 base64 = "0.22.1"
 clap = { version = "4.5.53", features = ["derive"] }
 crossterm = "0.29.0"
+image = "0.25.9"
 imagesize = "0.14.0"
+itertools = "0.14.0"
 ratatui = "0.29.0"
 termion = "4.0.6"

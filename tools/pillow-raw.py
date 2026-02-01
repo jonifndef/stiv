@@ -22,8 +22,8 @@ def main(path):
             f"f=24,s={width},v={height},m={m};"
         ).encode("ascii") + chunk + b"\x1b\\"
 
-        #sys.stdout.buffer.write(tmux_wrap(kitty_msg))
-        sys.stdout.buffer.write(kitty_msg)
+        sys.stdout.buffer.write(tmux_wrap(kitty_msg))
+        #sys.stdout.buffer.write(kitty_msg)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
