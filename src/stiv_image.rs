@@ -16,8 +16,8 @@ use itertools::{Itertools, Position};
 // E.g.
 //      let control_data = format!("f=100,t=f,a=T,c={cols},r={rows};", cols=self.cols, rows=self.rows).into_bytes();
 
-const PREFIX: &'static [u8; 3] = b"\x1b_G";
-const SUFFIX: &'static [u8; 2] = b"\x1b\\";
+const PREFIX: &[u8] = b"\x1b_G";
+const SUFFIX: &[u8] = b"\x1b\\";
 
 pub struct StivImage {
     path: String,
@@ -70,38 +70,11 @@ impl StivImage {
             out_buf.extend(SUFFIX);
 
             stdout.write_all(&out_buf)?;
+            out_buf.clear();
         }
 
         stdout.flush()?;
 
-        //let mut chunk_itr = encoded.as_bytes().chunks(4096).peekable();
-        //while let Some(chunk) = chunk_itr.next() {
-        //    if chunk_itr.peek().is_none() {
-        //        println!("It's Nooone!");
-        //    }
-        //    println!("{:?}", chunk);
-        //}
-        //while index < encoded.len() {
-        //    let data = encoded[index:];
-        //}
-
-        //let protocol_msg = b"f=24,s={width},v={height},m={m};{chunk}\x1b\\";
-
-        //let control_data = b"f=100,t=f,a=T;";
-        //let payload = self.path.as_bytes().to_vec();
-
-        //let prefix = b"\x1b_G";
-        //let suffix = b"\x1b\\";
-
-        //let mut out_buf: Vec<u8> = vec![];
-        //out_buf.extend(prefix);
-        //out_buf.extend(control_data);
-        //out_buf.extend(BASE64_STANDARD.encode(img_rbg_raw).as_bytes());
-        //out_buf.extend(suffix);
-
-        //let mut stdout = io::stdout();
-        //stdout.write_all(&out_buf)?;
-        //stdout.flush()?;
         Ok(())
     }
 }
