@@ -45,10 +45,12 @@ impl StivImage {
     }
 
     pub fn draw(&self) -> Result<(), anyhow::Error> {
-        let img_rbg = image::open(&self.path)?.into_rgb8();
-        let width = img_rbg.width();
-        let height = img_rbg.height();
-        let img_rgb_raw = img_rbg.into_raw();
+        let img = image::open(&self.path)?;
+        let resized_img = img.resize(2000, 1800, image::imageops::FilterType::Nearest);
+        let img_rgb = resized_img.into_rgb8();
+        let width = img_rgb.width();
+        let height = img_rgb.height();
+        let img_rgb_raw = img_rgb.into_raw();
         let encoded = BASE64_STANDARD.encode(img_rgb_raw);
 
         let mut m = 1;
