@@ -4,6 +4,7 @@ use base64::{prelude::BASE64_STANDARD, Engine};
 use crossterm::terminal::{self, window_size, WindowSize};
 use imagesize::{size, ImageError};
 use stiv_image::StivImage;
+use app::App;
 
 mod app;
 mod stiv_image;
@@ -48,9 +49,11 @@ fn get_image_rows_and_cols(image_path: &str, window_size: &WindowSize, scaling_p
 fn main() -> Result<(), anyhow::Error> {
     let args = Args::parse();
 
-    //app::run(&args.file)?;
-    let img = StivImage::new(args.file)?;
-    img.draw()?;
+    let mut app = App::new(args.file.clone());
+    app.run()?;
+
+    //let img = StivImage::new(args.file)?;
+    //img.draw()?;
 
     Ok(())
 }
