@@ -1,12 +1,13 @@
 use ratatui::{layout::{Constraint, Direction, Layout}, widgets::{Paragraph, Block, Borders}, Frame};
 use crossterm::event::{self, Event};
 use std::time::Duration;
+use crate::ui;
 
 #[derive(Default)]
 pub struct App {
     exit: bool,
     path: String,
-    msg: String,
+    pub msg: String,
 }
 
 impl App {
@@ -22,7 +23,8 @@ impl App {
         let mut terminal = ratatui::init();
 
         while !self.exit {
-            terminal.draw(|frame| self.draw(frame))?;
+            //terminal.draw(|frame| self.draw(frame))?;
+            terminal.draw(|frame| ui::ui_draw(frame, self))?;
             self.handle_events()?
         }
         ratatui::restore();

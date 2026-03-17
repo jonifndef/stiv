@@ -9,6 +9,7 @@ use app::App;
 mod app;
 mod stiv_image;
 mod win_info;
+mod ui;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
