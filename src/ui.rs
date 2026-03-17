@@ -1,5 +1,6 @@
 use ratatui::{layout::{Constraint, Direction, Layout}, widgets::{Paragraph, Block, Borders}, Frame};
 use crate::App;
+use crate::StivImage;
 
 pub fn ui_draw(frame: &mut Frame, app: &App) {
     let chunk_rows = Layout::default()
@@ -31,8 +32,14 @@ pub fn ui_draw(frame: &mut Frame, app: &App) {
     );
 
     frame.render_widget(
-        Paragraph::new("Top right").block(Block::new().borders(Borders::ALL)), cols_top[1]
+        Paragraph::new(format!("Rect x,y, width,height: {},{} {},{}", cols_top[1].x, cols_top[1].y, cols_top[1].width, cols_top[1].height)).block(Block::new().borders(Borders::ALL)), cols_top[1]
     );
+
+    //if let Ok(stiv_img) = StivImage::new(app.path.clone()) {
+    //    frame.render_stateful_widget(
+    //        stiv_img, cols_bot[0], &stiv_img
+    //    );
+    //}
 
     frame.render_widget(
         Paragraph::new("Bottom left").block(Block::new().borders(Borders::ALL)), cols_bot[0]

@@ -1,9 +1,10 @@
 use imagesize::{size, ImageError};
+use ratatui::{widgets::StatefulWidget, layout::Rect, buffer::Buffer};
 use crate::win_info::WinInfo;
 use base64::{prelude::BASE64_STANDARD, Engine};
 use std::{error, io::{self, Write}};
 use std::io::Cursor;
-use image::ImageReader;
+use image::{DynamicImage, ImageReader};
 use itertools::{Itertools, Position};
 
 // Some notes:
@@ -23,9 +24,14 @@ pub struct StivImage {
     path: String,
     width_px: u16,
     height_px: u16,
-    cols: u16,
-    rows: u16,
-    id: u16
+    size_cols: u16,
+    size_rows: u16,
+    pos_col: u16,
+    pos_row: u16,
+    id: u16,
+    zoom_state: f32,
+    dynamic_image: DynamicImage,
+    resized_image: Option<DynamicImage>
 }
 
 impl StivImage {
@@ -33,21 +39,26 @@ impl StivImage {
         let (img_width_px, img_height_px) = size(&path).map(|img_size| (img_size.width as u16, img_size.height as u16))?;
 
         let win_info = WinInfo::get_win_info()?;
+        let img = image::open(path.as_str())?;
 
         Ok(StivImage {
             path: path,
             width_px: img_width_px,
             height_px: img_width_px,
-            cols: (img_width_px / win_info.cell_width),
-            rows: (img_height_px / win_info.cell_height),
-            id: 0
+            size_cols: (img_width_px / win_info.cell_width),
+            size_rows: (img_height_px / win_info.cell_height),
+            pos_col: 0,
+            pos_row: 0,
+            id: 0,
+            zoom_state: 1.0,
+            dynamic_image: img,
+            resized_image: None,
         })
     }
 
-    pub fn draw(&self) -> Result<(), anyhow::Error> {
-        let img = image::open(&self.path)?;
-        let resized_img = img.resize(2000, 1800, image::imageops::FilterType::Nearest);
-        let img_rgb = resized_img.into_rgb8();
+    pub fn draw(&self, _pos_x: u16, _pos_y: u16) -> Result<(), anyhow::Error> {
+        //let img_rgb = self.dynamic_image.into_rgb8();
+        let img_rgb = self.dynamic_image.clone().into_rgb8();
         let width = img_rgb.width();
         let height = img_rgb.height();
         let img_rgb_raw = img_rgb.into_raw();
@@ -78,5 +89,15 @@ impl StivImage {
         stdout.flush()?;
 
         Ok(())
+    }
+}
+
+impl StatefulWidget for StivImage {
+    type State = StivImage;
+
+    fn render(self, area: Rect, _buf: &mut Buffer, state: &mut StivImage) {
+        //let resized_img = self.dynamic_image.resize(2000, 1800, image::imageops::FilterType::Nearest);
+        // Rect x y is in cols/rows
+        self.draw(area.x, area.y);
     }
 }

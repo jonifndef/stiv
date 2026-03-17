@@ -3,10 +3,9 @@ use crossterm::event::{self, Event};
 use std::time::Duration;
 use crate::ui;
 
-#[derive(Default)]
 pub struct App {
     exit: bool,
-    path: String,
+    pub path: String,
     pub msg: String,
 }
 
@@ -32,55 +31,7 @@ impl App {
         Ok(())
     }
 
-    fn draw(&mut self, frame: &mut Frame) {
-        //frame.render_widget("Hello world!", frame.area());
-
-        let chunk_rows = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(vec![
-            Constraint::Percentage(50),
-            Constraint::Percentage(50),
-        ])
-        .split(frame.area());
-
-        let cols_top = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(vec![
-            Constraint::Percentage(50),
-            Constraint::Percentage(50),
-        ])
-        .split(chunk_rows[0]);
-
-        let cols_bot = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(vec![
-            Constraint::Percentage(50),
-            Constraint::Percentage(50),
-        ])
-        .split(chunk_rows[1]);
-
-        frame.render_widget(
-            Paragraph::new(self.msg.clone()).block(Block::new().borders(Borders::ALL)), cols_top[0]
-        );
-
-        frame.render_widget(
-            Paragraph::new("Top right").block(Block::new().borders(Borders::ALL)), cols_top[1]
-        );
-
-        frame.render_widget(
-            Paragraph::new("Bottom left").block(Block::new().borders(Borders::ALL)), cols_bot[0]
-        );
-
-        frame.render_widget(
-            Paragraph::new("Bottom right").block(Block::new().borders(Borders::ALL)), cols_bot[1]
-        );
-    }
-
     fn handle_events(&mut self) -> anyhow::Result<()> {
-        //if matches!(event::read()?, Event::Key(_)) {
-        //    self.exit = true;
-        //}
-
         if event::poll(Duration::from_millis(50))? {
             match event::read()? {
                 Event::Key(_) => self.exit = true,
