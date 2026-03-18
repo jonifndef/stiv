@@ -25,6 +25,8 @@ pub struct StivImage {
     width_px: u16,
     height_px: u16,
     size_cols: u16,
+    cell_width_px: u16,
+    cell_height_px: u16,
     size_rows: u16,
     pos_col: u16,
     pos_row: u16,
@@ -37,16 +39,17 @@ pub struct StivImage {
 impl StivImage {
     pub fn new(path: String) -> Result<Self, anyhow::Error> {
         let (img_width_px, img_height_px) = size(&path).map(|img_size| (img_size.width as u16, img_size.height as u16))?;
-
         let win_info = WinInfo::get_win_info()?;
         let img = image::open(path.as_str())?;
 
         Ok(StivImage {
             path: path,
             width_px: img_width_px,
-            height_px: img_width_px,
-            size_cols: (img_width_px / win_info.cell_width),
-            size_rows: (img_height_px / win_info.cell_height),
+            height_px: img_height_px,
+            size_cols: (img_width_px / win_info.cell_width_px),
+            size_rows: (img_height_px / win_info.cell_height_px),
+            cell_width_px: win_info.cell_width_px,
+            cell_height_px: win_info.cell_height_px,
             pos_col: 0,
             pos_row: 0,
             id: 0,
@@ -56,9 +59,16 @@ impl StivImage {
         })
     }
 
+    pub fn resize_to_fit(&mut self, area: &Rect) {
+        let new_width = (area.width * self.cell_width_px) as u32;
+        let new_height = (area.height * self.cell_height_px) as u32;
+
+        self.resized_image = Some(self.dynamic_image.clone().resize(new_width, new_height, image::imageops::FilterType::Nearest));
+    }
+
     pub fn draw(&self, _pos_x: u16, _pos_y: u16) -> Result<(), anyhow::Error> {
         //let img_rgb = self.dynamic_image.into_rgb8();
-        let img_rgb = self.dynamic_image.clone().into_rgb8();
+        let img_rgb = self.resized_image.clone().into_rgb8();
         let width = img_rgb.width();
         let height = img_rgb.height();
         let img_rgb_raw = img_rgb.into_raw();
@@ -96,8 +106,7 @@ impl StatefulWidget for StivImage {
     type State = StivImage;
 
     fn render(self, area: Rect, _buf: &mut Buffer, state: &mut StivImage) {
-        //let resized_img = self.dynamic_image.resize(2000, 1800, image::imageops::FilterType::Nearest);
-        // Rect x y is in cols/rows
+        self.resize_to_fit(&area);
         self.draw(area.x, area.y);
     }
 }

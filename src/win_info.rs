@@ -5,8 +5,8 @@ pub struct WinInfo {
     pub height_px: u16,
     pub cols: u16,
     pub rows: u16,
-    pub cell_height: u16,
-    pub cell_width: u16
+    pub cell_height_px: u16,
+    pub cell_width_px: u16
 }
 
 impl WinInfo {
@@ -18,8 +18,8 @@ impl WinInfo {
             height_px:   window_size.height,
             cols:        window_size.columns,
             rows:        window_size.rows,
-            cell_height: (window_size.width  / window_size.columns),
-            cell_width:  (window_size.height / window_size.rows)
+            cell_height_px: (window_size.width  / window_size.columns),
+            cell_width_px:  (window_size.height / window_size.rows)
         };
 
         Ok(info)
