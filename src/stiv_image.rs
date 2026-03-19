@@ -67,10 +67,11 @@ impl StivImage {
     }
 
     pub fn move_cursor(&mut self, area: &Rect) -> Result<(), anyhow::Error>{
-        let row = area.y;
-        let col = area.x;
-        let sequence = format!("\033[{row};{col}H").into_bytes();
+        let row = area.y + 1;
+        let col = area.x + 1;
+        let sequence = format!("\x1b[{row};{col}H").into_bytes();
         let mut stdout = io::stdout();
+
         stdout.write_all(&sequence)?;
         stdout.flush()?;
 
