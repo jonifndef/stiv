@@ -1,4 +1,4 @@
-use crossterm::terminal::{self, window_size, WindowSize};
+use crossterm::terminal::{self};
 
 pub struct WinInfo {
     pub width_px: u16,

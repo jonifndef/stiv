@@ -1,4 +1,3 @@
-use ratatui::{layout::{Constraint, Direction, Layout}, widgets::{Paragraph, Block, Borders}, Frame};
 use crossterm::event::{self, Event};
 use std::time::Duration;
 use crate::ui;

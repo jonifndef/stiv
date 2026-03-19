@@ -81,6 +81,7 @@ impl StivImage {
             let mut out_buf: Vec<u8> = Vec::from([]);
             for (pos, chunk) in chunk_itr {
                 out_buf.extend(PREFIX);
+                // TODO: what if image is only one chunk?
                 if pos == Position::First {
                     out_buf.extend(b"a=T,");
                 }
