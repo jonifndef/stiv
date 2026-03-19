@@ -66,7 +66,18 @@ impl StivImage {
         self.resized_image = Some(self.dynamic_image.clone().resize(new_width, new_height, image::imageops::FilterType::Nearest));
     }
 
-    pub fn draw(&self, _pos_x: u16, _pos_y: u16) -> Result<(), anyhow::Error> {
+    pub fn move_cursor(&mut self, area: &Rect) -> Result<(), anyhow::Error>{
+        let row = area.y;
+        let col = area.x;
+        let sequence = format!("\033[{row};{col}H").into_bytes();
+        let mut stdout = io::stdout();
+        stdout.write_all(&sequence)?;
+        stdout.flush()?;
+
+        Ok(())
+    }
+
+    pub fn draw(&self) -> Result<(), anyhow::Error> {
         //let img_rgb = self.dynamic_image.into_rgb8();
         if let Some(img) = self.resized_image.clone() {
             let img_rgb = img.into_rgb8();
@@ -112,7 +123,12 @@ impl StatefulWidget for StivImageWidget {
 
     fn render(self, area: Rect, _buf: &mut Buffer, state: &mut StivImage) {
         state.resize_to_fit(&area);
-        if let Err(error) = state.draw(area.x, area.y) {
+
+        if let Err(error) = state.move_cursor(&area) {
+            println!("Error in state.move_cursor: {}", error)
+        }
+
+        if let Err(error) = state.draw() {
             println!("Error in state.draw: {}", error)
         }
     }
