@@ -68,45 +68,51 @@ impl StivImage {
 
     pub fn draw(&self, _pos_x: u16, _pos_y: u16) -> Result<(), anyhow::Error> {
         //let img_rgb = self.dynamic_image.into_rgb8();
-        let img_rgb = self.resized_image.clone().into_rgb8();
-        let width = img_rgb.width();
-        let height = img_rgb.height();
-        let img_rgb_raw = img_rgb.into_raw();
-        let encoded = BASE64_STANDARD.encode(img_rgb_raw);
+        if let Some(img) = self.resized_image.clone() {
+            let img_rgb = img.into_rgb8();
+            let width = img_rgb.width();
+            let height = img_rgb.height();
+            let img_rgb_raw = img_rgb.into_raw();
+            let encoded = BASE64_STANDARD.encode(img_rgb_raw);
 
-        let mut m = 1;
-        let chunk_itr = encoded.as_bytes().chunks(4096).with_position();
-        let mut stdout = io::stdout();
-        let mut out_buf: Vec<u8> = Vec::from([]);
-        for (pos, chunk) in chunk_itr {
-            out_buf.extend(PREFIX);
-            if pos == Position::First {
-                out_buf.extend(b"a=T,");
+            let mut m = 1;
+            let chunk_itr = encoded.as_bytes().chunks(4096).with_position();
+            let mut stdout = io::stdout();
+            let mut out_buf: Vec<u8> = Vec::from([]);
+            for (pos, chunk) in chunk_itr {
+                out_buf.extend(PREFIX);
+                if pos == Position::First {
+                    out_buf.extend(b"a=T,");
+                }
+                if pos == Position::Last {
+                    m = 0;
+                }
+
+                let control_data = format!("f=24,s={width},v={height},m={m};").into_bytes();
+                out_buf.extend(control_data);
+                out_buf.extend(chunk);
+                out_buf.extend(SUFFIX);
+
+                stdout.write_all(&out_buf)?;
+                out_buf.clear();
             }
-            if pos == Position::Last {
-                m = 0;
-            }
 
-            let control_data = format!("f=24,s={width},v={height},m={m};").into_bytes();
-            out_buf.extend(control_data);
-            out_buf.extend(chunk);
-            out_buf.extend(SUFFIX);
-
-            stdout.write_all(&out_buf)?;
-            out_buf.clear();
+            stdout.flush()?;
         }
-
-        stdout.flush()?;
 
         Ok(())
     }
 }
 
-impl StatefulWidget for StivImage {
+pub struct StivImageWidget;
+
+impl StatefulWidget for StivImageWidget {
     type State = StivImage;
 
     fn render(self, area: Rect, _buf: &mut Buffer, state: &mut StivImage) {
-        self.resize_to_fit(&area);
-        self.draw(area.x, area.y);
+        state.resize_to_fit(&area);
+        if let Err(error) = state.draw(area.x, area.y) {
+            println!("Error in state.draw: {}", error)
+        }
     }
 }
