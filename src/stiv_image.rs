@@ -37,9 +37,8 @@ pub struct StivImage {
 }
 
 impl StivImage {
-    pub fn new(path: String) -> anyhow::Result<StivImage> {
+    pub fn new(path: String, win_info: &WinInfo) -> anyhow::Result<StivImage> {
         let (img_width_px, img_height_px) = size(&path).map(|img_size| (img_size.width as u16, img_size.height as u16))?;
-        let win_info = WinInfo::get_win_info()?;
         let img = image::open(path.as_str())?;
 
         Ok(StivImage {
@@ -123,6 +122,15 @@ impl StatefulWidget for StivImageWidget {
     type State = StivImage;
 
     fn render(self, area: Rect, _buf: &mut Buffer, state: &mut StivImage) {
+        // TODOS:
+        //  - Only resize if it's needed! Compare area with self.resized_image, it might not
+        // need to be resized even if we had a resize event from the terminal
+        //  - Encode the kitty image buffer into the buf parameter
+        //  - Maybe (!) set_skip() on cells that shouldn't be overwritten with spaces by Ratatui
+        //  - Use faster resize crate, e.g. fast_image_resize, or even wgpu
+        //  - In draw: Use shared memory for writing kitty buffer to terminal
+        //  - In draw: Use tokio: tokio::io::stdout().write_all(&out_buf).await? to speed up
+        //  gallery_view
         state.resize_to_fit(&area);
 
         if let Err(error) = state.move_cursor(&area) {
