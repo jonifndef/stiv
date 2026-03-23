@@ -32,7 +32,7 @@ pub fn ui_draw(frame: &mut Frame, app: &App) {
         Paragraph::new(app.msg.clone()).block(Block::new().borders(Borders::ALL)), cols_top[0]
     );
 
-    if let Ok(mut stiv_img) = StivImage::new(app.path.clone()) {
+    if let Ok(mut stiv_img) = StivImage::new(app.image_paths[0].clone()) {
         frame.render_stateful_widget(
             StivImageWidget, cols_bot[0], &mut stiv_img
         );

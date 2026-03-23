@@ -18,7 +18,7 @@ pub struct Args {
 fn main() -> Result<(), anyhow::Error> {
     let args = Args::parse();
 
-    let mut app = App::new(args.file.clone());
+    let mut app = App::new(&args.file)?;
     app.run()?;
 
     //let img = StivImage::new(args.file)?;
