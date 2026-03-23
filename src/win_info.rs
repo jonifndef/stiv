@@ -18,8 +18,8 @@ impl WinInfo {
             height_px:   window_size.height,
             cols:        window_size.columns,
             rows:        window_size.rows,
-            cell_height_px: (window_size.width  / window_size.columns),
-            cell_width_px:  (window_size.height / window_size.rows)
+            cell_height_px: (window_size.height  / window_size.rows),
+            cell_width_px:  (window_size.width / window_size.columns)
         };
 
         Ok(info)

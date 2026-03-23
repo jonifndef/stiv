@@ -1,6 +1,7 @@
 use crossterm::event::{self, Event};
 use std::time::Duration;
 use crate::ui;
+//use std::thread;
 
 pub struct App {
     exit: bool,
@@ -23,7 +24,8 @@ impl App {
         while !self.exit {
             //terminal.draw(|frame| self.draw(frame))?;
             terminal.draw(|frame| ui::ui_draw(frame, self))?;
-            self.handle_events()?
+            self.handle_events()?;
+            //thread::sleep(Duration::from_secs(5));
         }
         ratatui::restore();
 
@@ -31,16 +33,14 @@ impl App {
     }
 
     fn handle_events(&mut self) -> anyhow::Result<()> {
-        if event::poll(Duration::from_millis(50))? {
-            match event::read()? {
-                Event::Key(_) => self.exit = true,
-                Event::Resize(cols, rows) => {
-                    self.msg = format!("cols: {}, rows: {}", cols, rows);
-                }
+       match event::read()? {
+           Event::Key(_) => self.exit = true,
+           Event::Resize(cols, rows) => {
+               self.msg = format!("cols: {}, rows: {}", cols, rows);
+           }
 
-                _ => {}
-            }
-        }
+           _ => {}
+       }
 
         Ok(())
     }

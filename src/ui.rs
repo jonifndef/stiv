@@ -32,13 +32,13 @@ pub fn ui_draw(frame: &mut Frame, app: &App) {
         Paragraph::new(app.msg.clone()).block(Block::new().borders(Borders::ALL)), cols_top[0]
     );
 
-    frame.render_widget(
-        Paragraph::new(format!("Rect x,y, width,height: {},{} {},{}", cols_top[1].x, cols_top[1].y, cols_top[1].width, cols_top[1].height)).block(Block::new().borders(Borders::ALL)), cols_top[1]
-    );
-
     if let Ok(mut stiv_img) = StivImage::new(app.path.clone()) {
         frame.render_stateful_widget(
             StivImageWidget, cols_bot[0], &mut stiv_img
+        );
+
+        frame.render_widget(
+            Paragraph::new(format!("Rect x,y, width,height: {},{} {},{}, cell_wdith, cell_height: {},{}", cols_top[1].x, cols_top[1].y, cols_top[1].width, cols_top[1].height, stiv_img.cell_width_px, stiv_img.cell_height_px)).block(Block::new().borders(Borders::ALL)), cols_top[1]
         );
     }
 

@@ -2,7 +2,7 @@ use imagesize::{size, ImageError};
 use ratatui::{widgets::StatefulWidget, layout::Rect, buffer::Buffer};
 use crate::win_info::WinInfo;
 use base64::{prelude::BASE64_STANDARD, Engine};
-use std::{error, io::{self, Write}};
+use std::{io::{self, Write}};
 use std::io::Cursor;
 use image::{DynamicImage, ImageReader};
 use itertools::{Itertools, Position};
@@ -25,8 +25,8 @@ pub struct StivImage {
     width_px: u16,
     height_px: u16,
     size_cols: u16,
-    cell_width_px: u16,
-    cell_height_px: u16,
+    pub cell_width_px: u16,
+    pub cell_height_px: u16,
     size_rows: u16,
     pos_col: u16,
     pos_row: u16,
@@ -37,7 +37,7 @@ pub struct StivImage {
 }
 
 impl StivImage {
-    pub fn new(path: String) -> Result<Self, anyhow::Error> {
+    pub fn new(path: String) -> anyhow::Result<StivImage> {
         let (img_width_px, img_height_px) = size(&path).map(|img_size| (img_size.width as u16, img_size.height as u16))?;
         let win_info = WinInfo::get_win_info()?;
         let img = image::open(path.as_str())?;
@@ -63,10 +63,10 @@ impl StivImage {
         let new_width = (area.width * self.cell_width_px) as u32;
         let new_height = (area.height * self.cell_height_px) as u32;
 
-        self.resized_image = Some(self.dynamic_image.clone().resize(new_width, new_height, image::imageops::FilterType::Nearest));
+        self.resized_image = Some(self.dynamic_image.resize(new_width, new_height, image::imageops::FilterType::Nearest));
     }
 
-    pub fn move_cursor(&mut self, area: &Rect) -> Result<(), anyhow::Error>{
+    pub fn move_cursor(&mut self, area: &Rect) -> anyhow::Result<()> {
         let row = area.y + 1;
         let col = area.x + 1;
         let sequence = format!("\x1b[{row};{col}H").into_bytes();
@@ -78,7 +78,7 @@ impl StivImage {
         Ok(())
     }
 
-    pub fn draw(&self) -> Result<(), anyhow::Error> {
+    pub fn draw(&self) -> anyhow::Result<()> {
         //let img_rgb = self.dynamic_image.into_rgb8();
         if let Some(img) = self.resized_image.clone() {
             let img_rgb = img.into_rgb8();
