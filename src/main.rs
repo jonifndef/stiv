@@ -12,8 +12,7 @@ mod shm;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    /// Png file to show
-    #[arg(short, long)]
+    #[arg(default_value_t = String::from(""))]
     file: String,
 }
 

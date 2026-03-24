@@ -1,8 +1,10 @@
 use crossterm::event::{self, Event};
+use std::env::current_dir;
 //use std::time::Duration;
-use std::{fs, io, path};
+use std::{fs, io, path::{self, Path, PathBuf}};
 use crate::ui;
 use crate::win_info;
+use std::env;
 //use std::thread;
 
 pub struct App {
@@ -20,10 +22,21 @@ pub enum Mode {
 
 impl App {
     pub fn new(path: &str) -> anyhow::Result<Self> {
-        let image_paths = get_image_paths(path)?;
+        let path_copy = if path.is_empty() {
+            env::current_dir()?
+        } else {
+            Path::new(path).to_path_buf()
+        };
+
+        let image_paths = get_image_paths(&path_copy)?;
 
         if image_paths.is_empty() {
-            return Err(anyhow::anyhow!("Path does not contain any images"));
+            let mut err_msg = String::from("Path does not contain any images");
+            if let Some(path_copy_str) = path_copy.to_str() {
+                err_msg = format!("{}: {}", err_msg, path_copy_str);
+            }
+
+            return Err(anyhow::anyhow!(err_msg));
         }
 
         Ok(App {
@@ -67,9 +80,18 @@ impl App {
 
 }
 
-fn get_image_paths(path: &str) -> io::Result<Vec<String>> {
-    let dir_entries = fs::read_dir(path)?;
+fn get_image_paths(path: &PathBuf) -> io::Result<Vec<String>> {
     let mut image_paths = vec![];
+
+    if is_image(path) {
+        if let Some(path_str) = path.to_str() {
+            image_paths.push(String::from(path_str));
+        }
+
+        return Ok(image_paths)
+    }
+
+    let dir_entries = fs::read_dir(path)?;
 
     for entry in dir_entries {
         let full_path = entry?.path();
