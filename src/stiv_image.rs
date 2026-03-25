@@ -67,7 +67,7 @@ impl StivImage {
             return
         }
 
-        self.resized_image = Some(self.dynamic_image.resize(new_width as u32, new_height as u32, image::imageops::FilterType::Nearest));
+        self.resized_image = Some(self.dynamic_image.resize(new_width as u32, new_height as u32, image::imageops::FilterType::CatmullRom));
     }
 
     pub fn move_cursor(&mut self, area: &Rect) -> anyhow::Result<()> {
@@ -83,7 +83,6 @@ impl StivImage {
     }
 
     pub fn draw(&self) -> anyhow::Result<()> {
-        //let img_rgb = self.dynamic_image.into_rgb8();
         let img = self.resized_image.clone().unwrap_or_else(|| self.dynamic_image.clone());
         let img_rgb = img.into_rgb8();
         let width = img_rgb.width();
@@ -105,7 +104,7 @@ impl StivImage {
                 m = 0;
             }
 
-            let control_data = format!("f=24,s={width},v={height},m={m};").into_bytes();
+            let control_data = format!("f=24,s={width},v={height},q=2,m={m};").into_bytes();
             out_buf.extend(control_data);
             out_buf.extend(chunk);
             out_buf.extend(SUFFIX);

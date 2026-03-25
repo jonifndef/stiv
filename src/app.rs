@@ -2,9 +2,9 @@ use crossterm::event::{self, Event};
 use std::env::current_dir;
 //use std::time::Duration;
 use std::{fs, io, path::{self, Path, PathBuf}};
+use std::env;
 use crate::ui;
 use crate::win_info;
-use std::env;
 //use std::thread;
 
 pub struct App {

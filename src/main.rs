@@ -19,16 +19,12 @@ pub struct Args {
 fn main() -> Result<(), anyhow::Error> {
     let args = Args::parse();
 
-    let data = b"hello world";
-    let mut shm = ShmFile::new(data.len())?;
-    shm.write_to_shm_file(data);
+    //let mut app = App::new(&args.file)?;
+    //app.run()?;
 
-    let mut app = App::new(&args.file)?;
-    app.run()?;
-
-//    let win_info = win_info::WinInfo::get_win_info()?;
-//    let img = StivImage::new(args.file, &win_info)?;
-//    img.draw()?;
+    let win_info = win_info::WinInfo::get_win_info()?;
+    let img = StivImage::new(args.file, &win_info)?;
+    img.draw()?;
 
     Ok(())
 }
