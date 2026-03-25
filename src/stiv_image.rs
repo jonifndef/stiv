@@ -33,7 +33,7 @@ pub struct StivImage {
     id: u16,
     zoom_state: f32,
     dynamic_image: DynamicImage,
-    resized_image: Option<DynamicImage>
+    resized_image: Option<DynamicImage>,
 }
 
 impl StivImage {
@@ -59,10 +59,15 @@ impl StivImage {
     }
 
     pub fn resize_to_fit(&mut self, area: &Rect) {
-        let new_width = (area.width * self.cell_width_px) as u32;
-        let new_height = (area.height * self.cell_height_px) as u32;
+        let new_width = area.width * self.cell_width_px;
+        let new_height = area.height * self.cell_height_px;
 
-        self.resized_image = Some(self.dynamic_image.resize(new_width, new_height, image::imageops::FilterType::Nearest));
+        if new_width > self.width_px ||
+            new_height > self.height_px {
+            return
+        }
+
+        self.resized_image = Some(self.dynamic_image.resize(new_width as u32, new_height as u32, image::imageops::FilterType::Nearest));
     }
 
     pub fn move_cursor(&mut self, area: &Rect) -> anyhow::Result<()> {
@@ -79,38 +84,37 @@ impl StivImage {
 
     pub fn draw(&self) -> anyhow::Result<()> {
         //let img_rgb = self.dynamic_image.into_rgb8();
-        if let Some(img) = self.resized_image.clone() {
-            let img_rgb = img.into_rgb8();
-            let width = img_rgb.width();
-            let height = img_rgb.height();
-            let img_rgb_raw = img_rgb.into_raw();
-            let encoded = BASE64_STANDARD.encode(img_rgb_raw);
+        let img = self.resized_image.clone().unwrap_or_else(|| self.dynamic_image.clone());
+        let img_rgb = img.into_rgb8();
+        let width = img_rgb.width();
+        let height = img_rgb.height();
+        let img_rgb_raw = img_rgb.into_raw();
+        let encoded = BASE64_STANDARD.encode(img_rgb_raw);
 
-            let mut m = 1;
-            let chunk_itr = encoded.as_bytes().chunks(4096).with_position();
-            let mut stdout = io::stdout();
-            let mut out_buf: Vec<u8> = Vec::from([]);
-            for (pos, chunk) in chunk_itr {
-                out_buf.extend(PREFIX);
-                // TODO: what if image is only one chunk?
-                if pos == Position::First {
-                    out_buf.extend(b"a=T,");
-                }
-                if pos == Position::Last {
-                    m = 0;
-                }
-
-                let control_data = format!("f=24,s={width},v={height},m={m};").into_bytes();
-                out_buf.extend(control_data);
-                out_buf.extend(chunk);
-                out_buf.extend(SUFFIX);
-
-                stdout.write_all(&out_buf)?;
-                out_buf.clear();
+        let mut m = 1;
+        let chunk_itr = encoded.as_bytes().chunks(4096).with_position();
+        let mut stdout = io::stdout();
+        let mut out_buf: Vec<u8> = Vec::from([]);
+        for (pos, chunk) in chunk_itr {
+            out_buf.extend(PREFIX);
+            // TODO: what if image is only one chunk?
+            if pos == Position::First {
+                out_buf.extend(b"a=T,");
+            }
+            if pos == Position::Last {
+                m = 0;
             }
 
-            stdout.flush()?;
+            let control_data = format!("f=24,s={width},v={height},m={m};").into_bytes();
+            out_buf.extend(control_data);
+            out_buf.extend(chunk);
+            out_buf.extend(SUFFIX);
+
+            stdout.write_all(&out_buf)?;
+            out_buf.clear();
         }
+
+        stdout.flush()?;
 
         Ok(())
     }
