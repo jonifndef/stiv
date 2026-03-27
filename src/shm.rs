@@ -21,7 +21,7 @@ impl ShmFile {
 
         let shm_path = format!("dev/shm/stiv-img-{}", randnum);
         let shm_basename = match shm_path.as_str().split("/").last() {
-            Some(shm_basename_str) => String::from(shm_basename_str),
+            Some(shm_basename_str) => format!("/{}", shm_basename_str),//String::from(shm_basename_str),
             None => { return Err(anyhow::anyhow!("Unable to get basename of shm file path")); }
         };
 
@@ -49,7 +49,7 @@ impl ShmFile {
         }
 
         Ok(Self {
-            shm_path: format!("/dev/shm/{}", shm_path),
+            shm_path: shm_path,
             shm_basename: shm_basename,
             ptr: ptr as *mut u8,
             _fd: fd,
@@ -76,7 +76,7 @@ impl ShmFile {
     }
 
     pub fn get_shm_path(&self) -> &str {
-        self.shm_path.as_str()
+        self.shm_basename.as_str()
     }
 }
 

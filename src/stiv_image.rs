@@ -1,6 +1,6 @@
 use imagesize::{size, ImageError};
 use ratatui::{widgets::StatefulWidget, layout::Rect, buffer::Buffer};
-use crate::win_info::WinInfo;
+use crate::{shm::ShmFile, win_info::WinInfo};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use std::{io::{self, Write}};
 use std::io::Cursor;
@@ -34,6 +34,7 @@ pub struct StivImage {
     zoom_state: f32,
     dynamic_image: DynamicImage,
     resized_image: Option<DynamicImage>,
+    shm_file: Option<ShmFile>,
 }
 
 impl StivImage {
@@ -55,6 +56,7 @@ impl StivImage {
             zoom_state: 1.0,
             dynamic_image: img,
             resized_image: None,
+            shm_file: None,
         })
     }
 
@@ -82,38 +84,60 @@ impl StivImage {
         Ok(())
     }
 
-    pub fn draw(&self) -> anyhow::Result<()> {
+    pub fn draw(&mut self) -> anyhow::Result<()> {
         let img = self.resized_image.clone().unwrap_or_else(|| self.dynamic_image.clone());
         let img_rgb = img.into_rgb8();
         let width = img_rgb.width();
         let height = img_rgb.height();
         let img_rgb_raw = img_rgb.into_raw();
-        let encoded = BASE64_STANDARD.encode(img_rgb_raw);
 
-        let mut m = 1;
-        let chunk_itr = encoded.as_bytes().chunks(4096).with_position();
+        // ===========================//
+        let mut shm = ShmFile::new(img_rgb_raw.len())?;
+        shm.write_to_shm_file(&img_rgb_raw)?;
+
+        let shm_path = shm.get_shm_path();
+        //println!("{}", shm_path);
+        let path_b64 = BASE64_STANDARD.encode(shm_path);
+        let cmd = format!(
+            "\x1b_Ga=T,f=24,t=s,s={width},v={height},q=2;{path_b64}\x1b\\",
+        );
+
         let mut stdout = io::stdout();
-        let mut out_buf: Vec<u8> = Vec::from([]);
-        for (pos, chunk) in chunk_itr {
-            out_buf.extend(PREFIX);
-            // TODO: what if image is only one chunk?
-            if pos == Position::First {
-                out_buf.extend(b"a=T,");
-            }
-            if pos == Position::Last {
-                m = 0;
-            }
-
-            let control_data = format!("f=24,s={width},v={height},q=2,m={m};").into_bytes();
-            out_buf.extend(control_data);
-            out_buf.extend(chunk);
-            out_buf.extend(SUFFIX);
-
-            stdout.write_all(&out_buf)?;
-            out_buf.clear();
-        }
-
+        stdout.write_all(cmd.as_bytes())?;
         stdout.flush()?;
+
+        //self.shm_file = Some(shm);
+        use std::time::Duration;
+        use std::thread;
+        thread::sleep(Duration::from_millis(5));
+        // ===========================//
+
+        //let encoded = BASE64_STANDARD.encode(img_rgb_raw);
+
+        //let mut m = 1;
+        //let chunk_itr = encoded.as_bytes().chunks(4096).with_position();
+        //let mut stdout = io::stdout();
+        //let mut out_buf: Vec<u8> = Vec::from([]);
+        //for (pos, chunk) in chunk_itr {
+        //    out_buf.extend(PREFIX);
+        //    // TODO: what if image is only one chunk?
+        //    if pos == Position::First {
+        //        out_buf.extend(b"a=T,");
+        //    }
+        //    if pos == Position::Last {
+        //        m = 0;
+        //    }
+
+        //    let control_data = format!("f=24,s={width},v={height},q=2,m={m};").into_bytes();
+        //    out_buf.extend(control_data);
+        //    out_buf.extend(chunk);
+        //    out_buf.extend(SUFFIX);
+
+        //    stdout.write_all(&out_buf)?;
+        //    out_buf.clear();
+        //}
+
+        //stdout.flush()?;
 
         Ok(())
     }
