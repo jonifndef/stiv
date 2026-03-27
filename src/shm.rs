@@ -39,7 +39,7 @@ impl ShmFile {
         assert!(!ptr.is_null(), "Shm mmap failed");
 
         Ok(Self {
-            shm_path: shm_path,
+            shm_path: format!("/dev/shm/{}", shm_path),
             ptr: ptr as *mut u8
         })
     }
