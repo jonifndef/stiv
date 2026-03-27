@@ -6,6 +6,8 @@ use std::{io::{self, Write}};
 use std::io::Cursor;
 use image::{DynamicImage, ImageReader};
 use itertools::{Itertools, Position};
+use fast_image_resize as fir;
+use fast_image_resize::images::Image as FirImage;
 
 // Some notes:
 // If we are running in Kitty terminal, use only the cols OR rows argument in the control data, the
@@ -70,6 +72,46 @@ impl StivImage {
         }
 
         self.resized_image = Some(self.dynamic_image.resize(new_width as u32, new_height as u32, image::imageops::FilterType::CatmullRom));
+
+        //let new_width  = (area.width  * self.cell_width_px) as u32;
+        //let new_height = (area.height * self.cell_height_px) as u32;
+
+        //if new_width >= self.width_px as u32 && new_height >= self.height_px as u32 {
+        //    return;
+        //}
+
+        //// Convert source to Rgb8 once — avoids RGBA alpha multiply/divide overhead
+        //let src_rgb = self.dynamic_image.to_rgb8();
+
+        //// Wrap in a fast_image_resize view — zero copy, just a pointer and dimensions
+        //let src = fir::images::ImageRef::new(
+        //    src_rgb.width(),
+        //    src_rgb.height(),
+        //    src_rgb.as_raw(),
+        //    fir::PixelType::U8x3,
+        //).unwrap();
+
+        //// Allocate destination buffer
+        //let mut dst = FirImage::new(new_width, new_height, fir::PixelType::U8x3);
+
+        //// Build resizer — picks up SIMD automatically at runtime (SSE4.1, AVX2, Neon)
+        //let mut resizer = fir::Resizer::new();
+
+        //resizer.resize(
+        //    &src,
+        //    &mut dst,
+        //    &fir::ResizeOptions::new()
+        //        .resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::CatmullRom)),
+        //).unwrap();
+
+        //// Wrap back into a DynamicImage for use in draw()
+        //let rgb_image = image::RgbImage::from_raw(
+        //    new_width,
+        //    new_height,
+        //    dst.into_vec(),
+        //).unwrap();
+
+        //self.resized_image = Some(DynamicImage::ImageRgb8(rgb_image));
     }
 
     pub fn move_cursor(&mut self, area: &Rect) -> anyhow::Result<()> {
@@ -95,9 +137,7 @@ impl StivImage {
         let mut shm = ShmFile::new(img_rgb_raw.len())?;
         shm.write_to_shm_file(&img_rgb_raw)?;
 
-        let shm_path = shm.get_shm_path();
-        //println!("{}", shm_path);
-        let path_b64 = BASE64_STANDARD.encode(shm_path);
+        let path_b64 = BASE64_STANDARD.encode(shm.get_shm_path());
         let cmd = format!(
             "\x1b_Ga=T,f=24,t=s,s={width},v={height},q=2;{path_b64}\x1b\\",
         );
@@ -106,7 +146,6 @@ impl StivImage {
         stdout.write_all(cmd.as_bytes())?;
         stdout.flush()?;
 
-        //self.shm_file = Some(shm);
         use std::time::Duration;
         use std::thread;
         thread::sleep(Duration::from_millis(5));
