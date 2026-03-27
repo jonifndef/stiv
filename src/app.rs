@@ -115,6 +115,9 @@ fn is_image(path: &path::PathBuf) -> bool {
     // Something to dwell on: Maybe use the "infer" create to read the file contents and infer the
     // file type from it. That feels a bit costly, though, as that would lead to two file reads per
     // file. The following implementation is an accepteable compromise for the time being.
+    // Antoher thing: move the logic to discover file extenstions to other place, and use that in
+    // stiv_image.rs to find out which "transmission protocol" to use: shared mem, tmp file, chunks
+    // to stdout, or... PNG!
     return match path.extension().and_then(|ext| ext.to_str()) {
         Some("jpg") => true,
         Some("jpeg") => true,

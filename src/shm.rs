@@ -1,6 +1,7 @@
 use rustix::fs::{ftruncate, Mode};
-use rustix::mm::{mmap, MapFlags, ProtFlags};
+use rustix::mm::{mmap, munmap, msync, MapFlags, ProtFlags, MsyncFlags};
 use rustix::shm;
+use rustix::fd::OwnedFd;
 use std::ptr::null_mut;
 use rand::RngExt;
 use std::slice;
@@ -8,6 +9,8 @@ use std::slice;
 pub struct ShmFile {
     shm_path: String,
     ptr: *mut u8,
+    _fd: OwnedFd,
+    num_bytes: usize,
 }
 
 impl ShmFile {
@@ -40,16 +43,28 @@ impl ShmFile {
 
         Ok(Self {
             shm_path: format!("/dev/shm/{}", shm_path),
-            ptr: ptr as *mut u8
+            ptr: ptr as *mut u8,
+            _fd: fd,
+            num_bytes: num_bytes,
         })
     }
 
-    pub fn write_to_shm_file(&mut self, data: &[u8]) {
+    pub fn write_to_shm_file(&mut self, data: &[u8]) -> Result<(), anyhow::Error> {
+        if data.len() > self.num_bytes {
+            return Err(anyhow::anyhow!("Trying to write a larger slice into shm file than what is mapped out"));
+        }
+
         let buf = unsafe {
-            slice::from_raw_parts_mut(self.ptr, data.len())
+            slice::from_raw_parts_mut(self.ptr, self.num_bytes)
         };
 
         buf[..data.len()].copy_from_slice(data);
+
+        unsafe {
+            msync(self.ptr.cast(), self.num_bytes, MsyncFlags::SYNC)?;
+        }
+
+        Ok(())
     }
 
     pub fn get_shm_path(&self) -> &str {
@@ -59,6 +74,10 @@ impl ShmFile {
 
 impl Drop for ShmFile {
     fn drop(&mut self) {
+        unsafe {
+            let _ = munmap(self.ptr.cast(), self.num_bytes);
+        }
+
         let _ = shm::unlink(&self.shm_path);
     }
 }
