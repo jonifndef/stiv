@@ -8,6 +8,7 @@ use std::slice;
 
 pub struct ShmFile {
     shm_path: String,
+    shm_basename: String,
     ptr: *mut u8,
     _fd: OwnedFd,
     num_bytes: usize,
@@ -18,10 +19,14 @@ impl ShmFile {
         let mut rng = rand::rng();
         let randnum: u32 = rng.random();
 
-        let shm_path = format!("/stiv-img-{}", randnum);
+        let shm_path = format!("dev/shm/stiv-img-{}", randnum);
+        let shm_basename = match shm_path.as_str().split("/").last() {
+            Some(shm_basename_str) => String::from(shm_basename_str),
+            None => { return Err(anyhow::anyhow!("Unable to get basename of shm file path")); }
+        };
 
         let fd = shm::open(
-            &shm_path,
+            &shm_basename,
             shm::OFlags::CREATE | shm::OFlags::EXCL | shm::OFlags::RDWR,
             Mode::RUSR | Mode::WUSR,
         )?;
@@ -39,10 +44,13 @@ impl ShmFile {
             )?
         };
 
-        assert!(!ptr.is_null(), "Shm mmap failed");
+        if ptr.is_null() {
+            return Err(anyhow::anyhow!("Shm mmap failed!"));
+        }
 
         Ok(Self {
             shm_path: format!("/dev/shm/{}", shm_path),
+            shm_basename: shm_basename,
             ptr: ptr as *mut u8,
             _fd: fd,
             num_bytes: num_bytes,
@@ -78,6 +86,6 @@ impl Drop for ShmFile {
             let _ = munmap(self.ptr.cast(), self.num_bytes);
         }
 
-        let _ = shm::unlink(&self.shm_path);
+        let _ = shm::unlink(&self.shm_basename);
     }
 }
