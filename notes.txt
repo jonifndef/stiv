@@ -1,0 +1,20 @@
+fix aspect ratio of new resize
+fix zoom and pan
+fix gallery layout based on num images, static thumbnail width
+fix borders with image names (both in gallery mode and single image mode)
+fix gallery navigation with cursor, goto SingleImage mode
+fix image ids
+fix optimization, minimal copying and re-creation of objects, reasonable lifetimes (for objects, not specifically "rust lifetimes")
+fix gallery layout dynamic wrapping based on resize or zooming
+fix gallery zooming
+fix rgba instead of rgb
+fix if there is only one chunk in pty transmittion (stiv_image.draw())
+fix rotate
+fix image not being centered
+fix yank image name and yank image file to clipboard
+fix gallery mode directory browser
+fix animated images
+fix error handling, make error types more consistent
+fix imports, they look like crap now
+fix a nice README.md with some checkboxes and some cool logo
+fix auto-update on file change
