@@ -34,7 +34,7 @@ pub struct StivImage {
     pos_row: u16,
     id: u16,
     zoom_state: f32,
-    dynamic_image: DynamicImage,
+    pub dynamic_image: DynamicImage, // remove pub here
     resized_image: Option<DynamicImage>,
     shm_file: Option<ShmFile>,
 }
@@ -63,55 +63,43 @@ impl StivImage {
     }
 
     pub fn resize_to_fit(&mut self, area: &Rect) {
-        let new_width = area.width * self.cell_width_px;
-        let new_height = area.height * self.cell_height_px;
+        let mut new_width = (area.width * self.cell_width_px) as u32;
+        let mut new_height = (area.height * self.cell_height_px) as u32;
 
-        if new_width > self.width_px ||
-            new_height > self.height_px {
+        if new_width > self.width_px as u32 ||
+            new_height > self.height_px as u32 {
             return
         }
 
-        self.resized_image = Some(self.dynamic_image.resize(new_width as u32, new_height as u32, image::imageops::FilterType::CatmullRom));
+        (new_width, new_height) = self.adjust_for_aspect_ratio(new_width, new_height);
 
-        //let new_width  = (area.width  * self.cell_width_px) as u32;
-        //let new_height = (area.height * self.cell_height_px) as u32;
+        let src_rgb = self.dynamic_image.to_rgb8();
 
-        //if new_width >= self.width_px as u32 && new_height >= self.height_px as u32 {
-        //    return;
-        //}
+        let src = fir::images::ImageRef::new(
+            src_rgb.width(),
+            src_rgb.height(),
+            src_rgb.as_raw(),
+            fir::PixelType::U8x3,
+        ).unwrap();
 
-        //// Convert source to Rgb8 once — avoids RGBA alpha multiply/divide overhead
-        //let src_rgb = self.dynamic_image.to_rgb8();
+        let mut dst = FirImage::new(new_width, new_height, fir::PixelType::U8x3);
 
-        //// Wrap in a fast_image_resize view — zero copy, just a pointer and dimensions
-        //let src = fir::images::ImageRef::new(
-        //    src_rgb.width(),
-        //    src_rgb.height(),
-        //    src_rgb.as_raw(),
-        //    fir::PixelType::U8x3,
-        //).unwrap();
+        let mut resizer = fir::Resizer::new();
 
-        //// Allocate destination buffer
-        //let mut dst = FirImage::new(new_width, new_height, fir::PixelType::U8x3);
+        resizer.resize(
+            &src,
+            &mut dst,
+            &fir::ResizeOptions::new()
+                .resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::CatmullRom)),
+        ).unwrap();
 
-        //// Build resizer — picks up SIMD automatically at runtime (SSE4.1, AVX2, Neon)
-        //let mut resizer = fir::Resizer::new();
+        let rgb_image = image::RgbImage::from_raw(
+            new_width,
+            new_height,
+            dst.into_vec(),
+        ).unwrap();
 
-        //resizer.resize(
-        //    &src,
-        //    &mut dst,
-        //    &fir::ResizeOptions::new()
-        //        .resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::CatmullRom)),
-        //).unwrap();
-
-        //// Wrap back into a DynamicImage for use in draw()
-        //let rgb_image = image::RgbImage::from_raw(
-        //    new_width,
-        //    new_height,
-        //    dst.into_vec(),
-        //).unwrap();
-
-        //self.resized_image = Some(DynamicImage::ImageRgb8(rgb_image));
+        self.resized_image = Some(DynamicImage::ImageRgb8(rgb_image));
     }
 
     pub fn move_cursor(&mut self, area: &Rect) -> anyhow::Result<()> {
@@ -179,6 +167,23 @@ impl StivImage {
         //stdout.flush()?;
 
         Ok(())
+    }
+
+    fn adjust_for_aspect_ratio(&self, new_width: u32, new_height: u32) -> (u32, u32) {
+        let ratio = self.dynamic_image.width() as f32 / self.dynamic_image.height() as f32;
+        let test_width = new_height as f32 * ratio;
+        if test_width > new_width as f32 {
+            //// set new_width as the adjusted width, and calculate a height based on it
+            let height = new_width as f32 / ratio;
+
+            // round the result?
+            return (new_width, height as u32);
+
+        } else {
+            // set new_height as the adjusted height, and test_width as the adjusted width
+            // round the result?
+            return (test_width as u32, new_height);
+        }
     }
 }
 

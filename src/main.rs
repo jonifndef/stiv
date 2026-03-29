@@ -21,10 +21,6 @@ pub struct Args {
 fn main() -> Result<(), anyhow::Error> {
     let args = Args::parse();
 
-    //let data = b"hello word how are you today?";
-    //let mut shm = ShmFile::new(data.len())?;
-    //shm.write_to_shm_file(data)?;
-
     //let mut app = App::new(&args.file)?;
     //app.run()?;
 
