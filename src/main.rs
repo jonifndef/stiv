@@ -28,7 +28,7 @@ fn main() -> Result<(), anyhow::Error> {
     let mut img = StivImage::new(args.file, &win_info)?;
     let rect = Rect { x: 0, y: 0, width: win_info.cols, height: win_info.rows };
     img.resize_to_fit(&rect);
-    img.draw()?;
+    //img.draw()?;
 
     Ok(())
 }

@@ -66,6 +66,9 @@ impl StivImage {
         let mut new_width = (area.width * self.cell_width_px) as u32;
         let mut new_height = (area.height * self.cell_height_px) as u32;
 
+        // This represents a bug, with an img like "narrow_wallpaper.jpg", we will return here
+        // since the new_width will be larger than the image, but new_height will definitely NOT be
+        // larger then the image height, and alas, it sill needs a resize.
         if new_width > self.width_px as u32 ||
             new_height > self.height_px as u32 {
             return
@@ -171,16 +174,25 @@ impl StivImage {
 
     fn adjust_for_aspect_ratio(&self, new_width: u32, new_height: u32) -> (u32, u32) {
         let ratio = self.dynamic_image.width() as f32 / self.dynamic_image.height() as f32;
+        println!("dyn_img w,h: {},{}", self.dynamic_image.width(), self.dynamic_image.height());
+        println!("ratio: {:.32}", ratio);
+        println!("new_w,new_h: {},{}", new_width, new_height);
+
         let test_width = new_height as f32 * ratio;
+
+        println!("test_width: {:.32}", test_width);
+
         if test_width > new_width as f32 {
             //// set new_width as the adjusted width, and calculate a height based on it
             let height = new_width as f32 / ratio;
 
+            println!("returning w,h: {},{}", new_width, height as u32);
             // round the result?
             return (new_width, height as u32);
 
         } else {
             // set new_height as the adjusted height, and test_width as the adjusted width
+            println!("returning w,h: {},{}", test_width as u32, new_height);
             // round the result?
             return (test_width as u32, new_height);
         }
