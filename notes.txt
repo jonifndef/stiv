@@ -1,4 +1,3 @@
-fix aspect ratio of new resize
 fix zoom and pan
 fix gallery layout based on num images, static thumbnail width
 fix borders with image names (both in gallery mode and single image mode)
