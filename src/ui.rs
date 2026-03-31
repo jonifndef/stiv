@@ -23,8 +23,8 @@ fn draw_single_image(frame: &mut Frame, app: &App) {
 fn draw_gallery_view(frame: &mut Frame, app: &App) {
     // TODO: Dynamic, wrapping flex layout. Static grid element size, unless we zoom
 
-    let num_horizontal_grid_cells = (app.win_info.cols / 30) as u16;
     let num_vertical_grid_cells = (app.win_info.rows / 12) as u16;
+    let num_horizontal_grid_cells = (app.win_info.cols / 30) as u16;
     let perc_v = 100 / num_vertical_grid_cells as u16;
     let perc_h = 100 / num_horizontal_grid_cells as u16;
 
@@ -49,8 +49,11 @@ fn draw_gallery_view(frame: &mut Frame, app: &App) {
         }
     }
 
+    let mut idx = 0;
     for col in grid_cells.into_iter() {
-        frame.render_widget(Paragraph::new("O L L E B O L L E").block(Block::new().borders(Borders::ALL)), col);
+        let msg = format!("Ollebolle: {}", idx);
+        idx += 1;
+        frame.render_widget(Paragraph::new(msg).block(Block::new().borders(Borders::ALL)), col);
     }
 
     //frame.render_widget(
@@ -72,4 +75,21 @@ fn draw_gallery_view(frame: &mut Frame, app: &App) {
     //        StivImageWidget, cols_bot[1], &mut stiv_img
     //    );
     //}
+}
+
+fn get_num_horizontal_grid_cells(window_cols: u16) -> u16 {
+    // start by dividing by a middle-ground width, something like 30, save the truncated int and check if the reminder is
+    // under or above 0.5.
+    // If it's under 0.5, increase width from 30 to 31, if it's still above or equal
+    // to the old int, step up to 32, keep checking. If it's under, use the previous width.
+    // If it's over 0.5, decrease the width from 30 to 29, if it's still under or equal to the old
+    // int, step down to 28, keep checking. If it's above, use the previous width
+    let with_decimal_points = window_cols / 30;
+    let truncated_int = with_decimal_points as i16;
+    if (truncated_int as f32 + 0.5) as i16 > truncated_int {
+
+    }
+
+    3
+    // we need to return the width itself too! It is needed in the grid cell constraints!
 }
