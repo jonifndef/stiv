@@ -1,5 +1,5 @@
 use ratatui::{layout::{Constraint, Direction, Layout, Rect}, widgets::{Paragraph, Block, Borders}, Frame};
-use crate::{app, App};
+use crate::{app, win_info::WinInfo, App};
 use crate::StivImage;
 use crate::stiv_image::StivImageWidget;
 //use std::iter;
@@ -7,29 +7,37 @@ use crate::stiv_image::StivImageWidget;
 // Set grid size based on terminal window cols,rows
 // 30x12 cells is a pretty good size to start with, per grid cell
 pub fn ui_draw(frame: &mut Frame, app: &App) {
+    let win_info = match WinInfo::get_win_info() {
+        Ok(win_info) => win_info,
+        Err(error) => {
+            println!("Error! {}", error);
+            return;
+        }
+    };
+
     match app.curr_mode {
-        app::Mode::SingleImage => draw_single_image(frame, app),
-        app::Mode::GalleryView => draw_gallery_view(frame, app)
+        app::Mode::SingleImage => draw_single_image(frame, &win_info, app),
+        app::Mode::GalleryView => draw_gallery_view(frame, &win_info, app)
     }
 }
 
-fn draw_single_image(frame: &mut Frame, app: &App) {
+fn draw_single_image(frame: &mut Frame, win_info: &WinInfo, app: &App) {
     // Set grid size (w,h) based on num of cols,rows in window
-    if let Ok(mut stiv_img) = StivImage::new(app.image_paths[0].clone(), &app.win_info) {
+    if let Ok(mut stiv_img) = StivImage::new(app.image_paths[0].clone(), &win_info) {
         frame.render_stateful_widget(StivImageWidget, frame.area(), &mut stiv_img);
     }
 }
 
-fn draw_gallery_view(frame: &mut Frame, app: &App) {
+fn draw_gallery_view(frame: &mut Frame, win_info: &WinInfo, _app: &App) {
     // TODO: Dynamic, wrapping flex layout. Static grid element size, unless we zoom
+    let grid_cell_width = 30;
+    let grid_cell_height = 12;
 
-    let num_vertical_grid_cells = (app.win_info.rows / 12) as u16;
-    let num_horizontal_grid_cells = (app.win_info.cols / 30) as u16;
-    let perc_v = 100 / num_vertical_grid_cells as u16;
-    let perc_h = 100 / num_horizontal_grid_cells as u16;
+    let num_vertical_grid_cells = (win_info.rows / grid_cell_height) as u16;
+    let num_horizontal_grid_cells = (win_info.cols / grid_cell_width) as u16;
 
-    let vertical_constraints = vec![Constraint::Percentage(perc_v); num_vertical_grid_cells as usize];
-    let horizontal_constraints = vec![Constraint::Percentage(perc_h); num_horizontal_grid_cells as usize];
+    let vertical_constraints = vec![Constraint::Length(grid_cell_height); num_vertical_grid_cells as usize];
+    let horizontal_constraints = vec![Constraint::Length(grid_cell_width); num_horizontal_grid_cells as usize];
 
     let mut grid_cells: Vec<Rect> = Vec::new();
 

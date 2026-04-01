@@ -2,7 +2,6 @@ use crossterm::event::{self, Event};
 use std::{fs, io, path::{self, Path, PathBuf}};
 use std::env;
 use crate::ui;
-use crate::win_info;
 
 //use std::time::Duration;
 //use std::thread;
@@ -12,7 +11,6 @@ pub struct App {
     pub msg: String,
     pub curr_mode: Mode,
     pub image_paths: Vec<String>,
-    pub win_info: win_info::WinInfo,
 }
 
 pub enum Mode {
@@ -47,7 +45,6 @@ impl App {
                 _ => Mode::GalleryView
             },
             image_paths: image_paths,
-            win_info: win_info::WinInfo::get_win_info()?,
         })
     }
 
