@@ -1,4 +1,4 @@
-use crossterm::event::{self, Event};
+use crossterm::event::{self, Event, KeyCode};
 use ratatui::{widgets::StatefulWidget, buffer::Buffer, prelude::Rect};
 use std::{fs, io, path::{self, Path, PathBuf}};
 use std::env;
@@ -57,9 +57,7 @@ impl App {
         let mut terminal = ratatui::init();
 
         while !self.exit {
-            //terminal.draw(|frame| self.draw(frame))?;
-            //terminal.draw(|frame| ui::ui_draw(frame, self))?;
-            terminal.draw(|frame| frame.render_stateful_widget(AppWidget, frame.area(), self));
+            terminal.draw(|frame| frame.render_stateful_widget(AppWidget, frame.area(), self))?;
             self.handle_events()?;
             //thread::sleep(Duration::from_secs(5));
         }
@@ -69,13 +67,13 @@ impl App {
     }
 
     fn handle_events(&mut self) -> anyhow::Result<()> {
-       match event::read()? {
-           Event::Key(_) => self.exit = true,
-           Event::Resize(cols, rows) => {
-               self.msg = format!("cols: {}, rows: {}", cols, rows);
-           }
-
-           _ => {}
+        if let Some(key) = event::read()?.as_key_press_event() {
+            match key.code {
+                KeyCode::Char('q') => self.exit = true,
+                KeyCode::Char('j') => self.scroll_offset = self.scroll_offset.saturating_add(4),
+                KeyCode::Char('k') => self.scroll_offset = self.scroll_offset.saturating_sub(4),
+                _ => ()
+            }
        }
 
         Ok(())

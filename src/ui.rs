@@ -22,9 +22,7 @@ pub fn ui_draw(rect: &Rect, buf: &mut Buffer, app: &App) {
 }
 
 fn draw_single_image(rect: &Rect, buffer: &mut Buffer, app: &App, win_info: &WinInfo) {
-    // Set grid size (w,h) based on num of cols,rows in window
     if let Ok(mut stiv_img) = StivImage::new(app.image_paths[0].clone(), &win_info) {
-        //render_stateful_widget(StivImageWidget, frame.area(), &mut stiv_img);
         StivImageWidget.render(*rect, buffer, &mut stiv_img);
     }
 }
@@ -59,7 +57,7 @@ fn draw_gallery_view(rect: &Rect, buffer: &mut Buffer, app: &App, win_info: &Win
 
     let chunk_rows = Layout::default()
         .direction(Direction::Vertical)
-        .constrints(vertical_constraints)
+        .constraints(vertical_constraints)
         .split(content_area);
 
     for row in chunk_rows.into_iter() {
@@ -75,10 +73,17 @@ fn draw_gallery_view(rect: &Rect, buffer: &mut Buffer, app: &App, win_info: &Win
 
     let mut idx = 0;
     for col in grid_cells.into_iter() {
-        let msg = format!("Ollebolle: {}", idx);
+        if idx == app.image_paths.len() {
+            break;
+        }
+
+        let mut img = match StivImage::new(app.image_paths[idx].clone(), win_info) {
+            Ok(img) => img,
+            Err(_err) => return
+        };
+
+        StivImageWidget.render(col, &mut tot_content_buf, &mut img);
         idx += 1;
-        Paragraph::new(msg).block(Block::new().borders(Borders::ALL)).render(col, &mut tot_content_buf);
-        //frame.render_widget(Paragraph::new(msg).block(Block::new().borders(Borders::ALL)), col);
     }
 
     let visible_content = tot_content_buf
@@ -94,25 +99,8 @@ fn draw_gallery_view(rect: &Rect, buffer: &mut Buffer, app: &App, win_info: &Win
 
     if scrollbar_needed {
         let area = rect.intersection(buffer.area);
-        let mut state = ScrollbarState::new(20 as usize)
+        let mut state = ScrollbarState::new(((num_vertical_grid_cells - 1) * grid_cell_height) as usize)
             .position(app.scroll_offset as usize);
         Scrollbar::new(ScrollbarOrientation::VerticalRight).render(area, buffer, &mut state);
     }
-}
-
-fn get_num_horizontal_grid_cells(window_cols: u16) -> u16 {
-    // start by dividing by a middle-ground width, something like 30, save the truncated int and check if the reminder is
-    // under or above 0.5.
-    // If it's under 0.5, increase width from 30 to 31, if it's still above or equal
-    // to the old int, step up to 32, keep checking. If it's under, use the previous width.
-    // If it's over 0.5, decrease the width from 30 to 29, if it's still under or equal to the old
-    // int, step down to 28, keep checking. If it's above, use the previous width
-    let with_decimal_points = window_cols / 30;
-    let truncated_int = with_decimal_points as i16;
-    if (truncated_int as f32 + 0.5) as i16 > truncated_int {
-
-    }
-
-    3
-    // we need to return the width itself too! It is needed in the grid cell constraints!
 }

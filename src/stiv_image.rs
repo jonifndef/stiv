@@ -27,14 +27,14 @@ pub struct StivImage {
     width_px: u16,
     height_px: u16,
     size_cols: u16,
-    pub cell_width_px: u16,
-    pub cell_height_px: u16,
+    cell_width_px: u16,
+    cell_height_px: u16,
     size_rows: u16,
     pos_col: u16,
     pos_row: u16,
     id: u16,
     zoom_state: f32,
-    pub dynamic_image: DynamicImage, // remove pub here
+    dynamic_image: DynamicImage, // remove pub here
     resized_image: Option<DynamicImage>,
     shm_file: Option<ShmFile>,
 }
