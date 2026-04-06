@@ -1,4 +1,5 @@
 use crossterm::event::{self, Event};
+use ratatui::{widgets::StatefulWidget, buffer::Buffer, prelude::Rect};
 use std::{fs, io, path::{self, Path, PathBuf}};
 use std::env;
 use crate::ui;
@@ -11,7 +12,10 @@ pub struct App {
     pub msg: String,
     pub curr_mode: Mode,
     pub image_paths: Vec<String>,
+    pub scroll_offset: u16,
 }
+
+pub struct AppWidget;
 
 pub enum Mode {
     SingleImage,
@@ -45,6 +49,7 @@ impl App {
                 _ => Mode::GalleryView
             },
             image_paths: image_paths,
+            scroll_offset: 0,
         })
     }
 
@@ -53,7 +58,8 @@ impl App {
 
         while !self.exit {
             //terminal.draw(|frame| self.draw(frame))?;
-            terminal.draw(|frame| ui::ui_draw(frame, self))?;
+            //terminal.draw(|frame| ui::ui_draw(frame, self))?;
+            terminal.draw(|frame| frame.render_stateful_widget(AppWidget, frame.area(), self));
             self.handle_events()?;
             //thread::sleep(Duration::from_secs(5));
         }
@@ -120,5 +126,13 @@ fn is_image(path: &path::PathBuf) -> bool {
         Some("jpeg") => true,
         Some("png") => true,
         _ => false
+    }
+}
+
+impl StatefulWidget for AppWidget {
+    type State = App;
+
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut App) {
+        ui::ui_draw(&area, buf, state);
     }
 }
