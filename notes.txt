@@ -1,10 +1,8 @@
 fix zoom and pan
-fix gallery layout based on num images, static thumbnail width
 fix borders with image names (both in gallery mode and single image mode)
 fix gallery navigation with cursor, goto SingleImage mode
 fix image ids
 fix optimization, minimal copying and re-creation of objects, reasonable lifetimes (for objects, not specifically "rust lifetimes")
-fix gallery layout dynamic wrapping based on resize or zooming
 fix gallery zooming
 fix rgba instead of rgb
 fix if there is only one chunk in pty transmittion (stiv_image.draw())
@@ -17,22 +15,3 @@ fix error handling, make error types more consistent
 fix imports, they look like crap now
 fix a nice README.md with some checkboxes and some cool logo
 fix auto-update on file change
-
-How does the "flex" example in ratatui repo handle rendering of "half" objects and scrolling?
-
-App::run() -> render_widget(&self, ...)
-
-this is probably this:
-impl Widget for App {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-
-    let scroll_needed = self.render_demo(demo, buf); <-- this render_demo is the one that renders all the blocks
-
-then, in "render_demo()"...
-
-    self.selected_tab
-        .render(content_area, &mut demo_buf, &mut spacing);
-
-    which in turn calls "render_examples()"
-    THIS IS WHERE THE MAGIC HAPPENS, you might say.
-    Although, even if we only run once in the for loop (e.g. call break; after one iteration), we still get a large, scrollable arae. This is controlled by what?
