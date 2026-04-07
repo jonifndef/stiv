@@ -1,15 +1,14 @@
-use crossterm::event::{self, Event, KeyCode};
+use crossterm::event::{self, KeyCode};
 use ratatui::{widgets::StatefulWidget, buffer::Buffer, prelude::Rect};
 use std::{fs, io, path::{self, Path, PathBuf}};
 use std::env;
-use crate::ui;
+use crate::{shm::ShmFile, ui};
 
 //use std::time::Duration;
 //use std::thread;
 
 pub struct App {
     exit: bool,
-    pub msg: String,
     pub curr_mode: Mode,
     pub image_paths: Vec<String>,
     pub scroll_offset: u16,
@@ -43,7 +42,6 @@ impl App {
 
         Ok(App {
             exit: false,
-            msg: String::from(""),
             curr_mode: match &image_paths.len() {
                 1 => Mode::SingleImage,
                 _ => Mode::GalleryView

@@ -1,6 +1,7 @@
 use imagesize::{size, ImageError};
 use ratatui::{widgets::StatefulWidget, layout::Rect, buffer::Buffer};
-use crate::{shm::ShmFile, win_info::WinInfo};
+use rustix::shm;
+use crate::{shm::ShmFile, win_info::WinInfo, App};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use std::{io::{self, Write}};
 use std::io::Cursor;
@@ -44,6 +45,8 @@ impl StivImage {
         let (img_width_px, img_height_px) = size(&path).map(|img_size| (img_size.width as u16, img_size.height as u16))?;
         let img = image::open(path.as_str())?;
 
+        let shm_file = if let Ok(shm_file) = ShmFile::new(img.to_rgb8().into_raw().len()) { Some(shm_file) } else { None };
+
         Ok(StivImage {
             path: path,
             width_px: img_width_px,
@@ -58,7 +61,7 @@ impl StivImage {
             zoom_state: 1.0,
             dynamic_image: img,
             resized_image: None,
-            shm_file: None,
+            shm_file: shm_file,
         })
     }
 
@@ -120,19 +123,34 @@ impl StivImage {
         let width = img_rgb.width();
         let height = img_rgb.height();
         let img_rgb_raw = img_rgb.into_raw();
+        //let mut stdout = io::stdout();
 
         // ===========================//
-        let mut shm = ShmFile::new(img_rgb_raw.len())?;
-        shm.write_to_shm_file(&img_rgb_raw)?;
+        // Make this more obvious, somwthing like "if shm_available()"
+        if let Some(shm_file) = &mut self.shm_file {
+        //    self.draw_using_shm(&stdout, &img_rgb_raw)?;
+        //} else {
+        //    self.draw_using_byte_stream(&stdout, &img_rgb_raw)?;
+            shm_file.resize_if_needed(img_rgb_raw.len())?;
+            shm_file.write_to_shm_file(&img_rgb_raw)?;
+            let path_b64 = BASE64_STANDARD.encode(shm_file.get_shm_path());
+            let cmd = format!(
+                "\x1b_Ga=T,f=24,t=s,s={width},v={height},q=2;{path_b64}\x1b\\",
+            );
 
-        let path_b64 = BASE64_STANDARD.encode(shm.get_shm_path());
-        let cmd = format!(
-            "\x1b_Ga=T,f=24,t=s,s={width},v={height},q=2;{path_b64}\x1b\\",
-        );
+            let mut stdout = io::stdout();
+            stdout.write_all(cmd.as_bytes())?;
+            stdout.flush()?;
+        }
 
-        let mut stdout = io::stdout();
-        stdout.write_all(cmd.as_bytes())?;
-        stdout.flush()?;
+
+        //let cmd = format!(
+        //    "\x1b_Ga=T,f=24,t=s,s={width},v={height},q=2;{path_b64}\x1b\\",
+        //);
+
+        //let mut stdout = io::stdout();
+        //stdout.write_all(cmd.as_bytes())?;
+        //stdout.flush()?;
 
         use std::time::Duration;
         use std::thread;
@@ -168,6 +186,22 @@ impl StivImage {
 
         Ok(())
     }
+
+    //fn draw_using_shm(&self, stdout: &io::Stdout, img: &Container) -> anyhow::Result<()> {
+    //    if let Some(shm_file) = self.shm_file {
+    //        shm_file.resize_if_needed(img_rgb_raw.len())?;
+    //        shm_file.write_to_shm_file(&img_rgb_raw)?;
+    //    } else {
+    //        return anyhow::Err;
+    //    }
+
+    //    Ok(())
+    //}
+
+    //fn draw_using_byte_stream(&self, stdout: &io::Stdout) -> anyhow::Result<()> {
+
+    //    Ok(())
+    //}
 
     fn adjust_for_aspect_ratio(&self, new_width: u32, new_height: u32) -> (u32, u32) {
         let ratio = self.dynamic_image.width() as f32 / self.dynamic_image.height() as f32;

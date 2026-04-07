@@ -9,7 +9,7 @@ use std::slice;
 pub struct ShmFile {
     shm_filename: String,
     ptr: *mut u8,
-    _fd: OwnedFd,
+    fd: OwnedFd,
     num_bytes: usize,
 }
 
@@ -46,7 +46,7 @@ impl ShmFile {
         Ok(Self {
             shm_filename: shm_filename,
             ptr: ptr as *mut u8,
-            _fd: fd,
+            fd: fd,
             num_bytes: num_bytes,
         })
     }
@@ -71,6 +71,14 @@ impl ShmFile {
 
     pub fn get_shm_path(&self) -> &str {
         &self.shm_filename.as_str()
+    }
+
+    pub fn resize_if_needed(&self, num_bytes: usize) -> Result<(), anyhow::Error> {
+        if num_bytes != self.num_bytes {
+            ftruncate(&self.fd, num_bytes as u64)?;
+        }
+
+        Ok(())
     }
 }
 

@@ -6,7 +6,7 @@ use crate::stiv_image::StivImageWidget;
 
 // Set grid size based on terminal window cols,rows
 // 30x12 cells is a pretty good size to start with, per grid cell
-pub fn ui_draw(rect: &Rect, buf: &mut Buffer, app: &App) {
+pub fn ui_draw(rect: &Rect, buf: &mut Buffer, app: &mut App) {
     let win_info = match WinInfo::get_win_info() {
         Ok(win_info) => win_info,
         Err(error) => {
@@ -21,7 +21,7 @@ pub fn ui_draw(rect: &Rect, buf: &mut Buffer, app: &App) {
     }
 }
 
-fn draw_single_image(rect: &Rect, buffer: &mut Buffer, app: &App, win_info: &WinInfo) {
+fn draw_single_image(rect: &Rect, buffer: &mut Buffer, app: &mut App, win_info: &WinInfo) {
     if let Ok(mut stiv_img) = StivImage::new(app.image_paths[0].clone(), &win_info) {
         StivImageWidget.render(*rect, buffer, &mut stiv_img);
     }
