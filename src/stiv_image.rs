@@ -14,7 +14,7 @@ const PREFIX: &[u8] = b"\x1b_G";
 const SUFFIX: &[u8] = b"\x1b\\";
 
 pub struct StivImage {
-    path: String,
+    pub path: String,
     width_px: u16,
     height_px: u16,
     size_cols: u16,

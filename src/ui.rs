@@ -15,43 +15,44 @@ pub fn ui_draw(rect: &Rect, buf: &mut Buffer, app: &mut App) {
         }
     };
 
+    let img_path = app.image_paths[0].clone();
+
     match app.curr_mode {
-        app::Mode::SingleImage => draw_single_image(rect, buf, app, &win_info),
+        app::Mode::SingleImage => draw_single_image(rect, buf, app, &win_info, img_path),
         app::Mode::GalleryView => draw_gallery_view(rect, buf, app, &win_info)
     }
 }
 
-fn draw_single_image(rect: &Rect, buffer: &mut Buffer, app: &mut App, win_info: &WinInfo) {
-    if !app.stiv_images.contains_key(&app.image_paths[0]) {
-        if let Ok(stiv_img) = StivImage::new(app.image_paths[0].clone(), &win_info) {
-            app.stiv_images.insert(app.image_paths[0].clone(), stiv_img);
+fn draw_single_image(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: &WinInfo, img_path: String) {
+    if !app.stiv_images.contains_key(&img_path) {
+        if let Ok(stiv_img) = StivImage::new(img_path.clone(), &win_info) {
+            app.stiv_images.insert(img_path.clone(), stiv_img);
         } else {
             return
         }
     }
 
-    if let Some(stiv_img) = app.stiv_images.get_mut(&app.image_paths[0]) {
-        StivImageWidget.render(*rect, buffer, stiv_img);
+    if let Some(stiv_img) = app.stiv_images.get_mut(&img_path) {
+        StivImageWidget.render(*area, buffer, stiv_img);
     }
 }
 
-fn draw_gallery_view(rect: &Rect, buffer: &mut Buffer, app: &App, win_info: &WinInfo) {
+fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: &WinInfo) {
     // TODO: Dynamic, wrapping flex layout. Static grid element size, unless we zoom
     let grid_cell_width = 30;
     let grid_cell_height = 12;
-    let tot_num_grid_cells = 20;
 
     let num_horizontal_grid_cells = (win_info.cols / grid_cell_width) as u16;
-    let num_vertical_grid_cells = (tot_num_grid_cells + num_horizontal_grid_cells - 1) / num_horizontal_grid_cells as u16;
+    let num_vertical_grid_cells = (app.image_paths.len() as u16 + num_horizontal_grid_cells - 1) / num_horizontal_grid_cells as u16;
 
     let horizontal_constraints = vec![Constraint::Length(grid_cell_width); num_horizontal_grid_cells as usize];
     let vertical_constraints = vec![Constraint::Length(grid_cell_height); num_vertical_grid_cells as usize];
 
     let tot_content_height = num_vertical_grid_cells * grid_cell_height;
     let tot_content_area = Rect::new(0, 0, win_info.cols, tot_content_height);
-    let mut tot_content_buf = Buffer::empty(tot_content_area); // this buf will be passed as a mutref to each
+    let tot_content_buf = Buffer::empty(tot_content_area); // this buf will be passed as a mutref to each
 
-    let scrollbar_needed = app.scroll_offset != 0 || tot_content_height > rect.height;
+    let scrollbar_needed = app.scroll_offset != 0 || tot_content_height > area.height;
     let content_area = if scrollbar_needed {
         Rect {
             width: tot_content_area.width - 1,
@@ -61,7 +62,7 @@ fn draw_gallery_view(rect: &Rect, buffer: &mut Buffer, app: &App, win_info: &Win
         tot_content_area
     };
 
-    let mut grid_cells: Vec<Rect> = Vec::new();
+    //let mut grid_cells: Vec<Rect> = Vec::new();
 
     let chunk_rows = Layout::default()
         .direction(Direction::Vertical)
@@ -74,39 +75,50 @@ fn draw_gallery_view(rect: &Rect, buffer: &mut Buffer, app: &App, win_info: &Win
         .constraints(horizontal_constraints.clone())
         .split(*row);
 
-        for col in cols.into_iter() {
-            grid_cells.push(*col);
+        for (i, col) in cols.into_iter().enumerate() {
+            let img_path = match app.image_paths.get(i) {
+                Some(path) => {
+                    println!("Getting {} from image_paths", path);
+                    path.clone()
+                },
+                None => {
+                    println!("breaking!");
+                    break;
+                }
+            };
+            //grid_cells.push(*col);
+            draw_single_image(col, buffer, app, win_info, img_path);
         }
     }
 
-    let mut idx = 0;
-    for col in grid_cells.into_iter() {
-        if idx == app.image_paths.len() {
-            break;
-        }
+    //let mut idx = 0;
+    //for col in grid_cells.into_iter() {
+    //    if idx == app.image_paths.len() {
+    //        break;
+    //    }
 
-        let mut img = match StivImage::new(app.image_paths[idx].clone(), win_info) {
-            Ok(img) => img,
-            Err(_err) => return
-        };
+    //    let mut img = match StivImage::new(app.image_paths[idx].clone(), win_info) {
+    //        Ok(img) => img,
+    //        Err(_err) => return
+    //    };
 
-        StivImageWidget.render(col, &mut tot_content_buf, &mut img);
-        idx += 1;
-    }
+    //    StivImageWidget.render(col, &mut tot_content_buf, &mut img);
+    //    idx += 1;
+    //}
 
     let visible_content = tot_content_buf
         .content
         .into_iter()
-        .skip((rect.width * app.scroll_offset) as usize) // it was "area" before
-        .take(rect.area() as usize); // same here
+        .skip((area.width * app.scroll_offset) as usize) // it was "area" before
+        .take(area.area() as usize); // same here
     for (i, cell) in visible_content.enumerate() {
-        let x = i as u16 % rect.width;
-        let y = i as u16 / rect.width;
-        buffer[(rect.x + x, rect.y + y)] = cell;
+        let x = i as u16 % area.width;
+        let y = i as u16 / area.width;
+        buffer[(area.x + x, area.y + y)] = cell;
     }
 
     if scrollbar_needed {
-        let area = rect.intersection(buffer.area);
+        let area = area.intersection(buffer.area);
         let mut state = ScrollbarState::new(((num_vertical_grid_cells - 1) * grid_cell_height) as usize)
             .position(app.scroll_offset as usize);
         Scrollbar::new(ScrollbarOrientation::VerticalRight).render(area, buffer, &mut state);
