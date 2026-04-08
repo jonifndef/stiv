@@ -10,16 +10,6 @@ use itertools::{Itertools, Position};
 use fast_image_resize as fir;
 use fast_image_resize::images::Image as FirImage;
 
-// Some notes:
-// If we are running in Kitty terminal, use only the cols OR rows argument in the control data, the
-// other will scale dynamically, avoiding any unpleasant shrinkage artifacts and all that jazz.
-// E.g.
-//      let control_data = format!("f=100,t=f,a=T,c={cols};", cols=self.cols).into_bytes();
-// However, if we are running on another kitty-supporting terminal, like wezterm or ghostty
-// (unknown how ghostty does it), we need to provide both, as no dynamic scaling happens.
-// E.g.
-//      let control_data = format!("f=100,t=f,a=T,c={cols},r={rows};", cols=self.cols, rows=self.rows).into_bytes();
-
 const PREFIX: &[u8] = b"\x1b_G";
 const SUFFIX: &[u8] = b"\x1b\\";
 
@@ -35,7 +25,7 @@ pub struct StivImage {
     pos_row: u16,
     id: u16,
     zoom_state: f32,
-    dynamic_image: DynamicImage, // remove pub here
+    dynamic_image: DynamicImage,
     resized_image: Option<DynamicImage>,
     shm_file: Option<ShmFile>,
 }
@@ -152,9 +142,9 @@ impl StivImage {
         //stdout.write_all(cmd.as_bytes())?;
         //stdout.flush()?;
 
-        use std::time::Duration;
-        use std::thread;
-        thread::sleep(Duration::from_millis(5));
+        //use std::time::Duration;
+        //use std::thread;
+        //thread::sleep(Duration::from_millis(5));
         // ===========================//
 
         //let encoded = BASE64_STANDARD.encode(img_rgb_raw);

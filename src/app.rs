@@ -2,7 +2,8 @@ use crossterm::event::{self, KeyCode};
 use ratatui::{widgets::StatefulWidget, buffer::Buffer, prelude::Rect};
 use std::{fs, io, path::{self, Path, PathBuf}};
 use std::env;
-use crate::{shm::ShmFile, ui};
+use std::collections::HashMap;
+use crate::{stiv_image::StivImage, ui};
 
 //use std::time::Duration;
 //use std::thread;
@@ -12,6 +13,7 @@ pub struct App {
     pub curr_mode: Mode,
     pub image_paths: Vec<String>,
     pub scroll_offset: u16,
+    pub stiv_images: HashMap<String, StivImage>,
 }
 
 pub struct AppWidget;
@@ -48,6 +50,7 @@ impl App {
             },
             image_paths: image_paths,
             scroll_offset: 0,
+            stiv_images: HashMap::new(),
         })
     }
 

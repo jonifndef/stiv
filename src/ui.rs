@@ -22,8 +22,16 @@ pub fn ui_draw(rect: &Rect, buf: &mut Buffer, app: &mut App) {
 }
 
 fn draw_single_image(rect: &Rect, buffer: &mut Buffer, app: &mut App, win_info: &WinInfo) {
-    if let Ok(mut stiv_img) = StivImage::new(app.image_paths[0].clone(), &win_info) {
-        StivImageWidget.render(*rect, buffer, &mut stiv_img);
+    if !app.stiv_images.contains_key(&app.image_paths[0]) {
+        if let Ok(stiv_img) = StivImage::new(app.image_paths[0].clone(), &win_info) {
+            app.stiv_images.insert(app.image_paths[0].clone(), stiv_img);
+        } else {
+            return
+        }
+    }
+
+    if let Some(stiv_img) = app.stiv_images.get_mut(&app.image_paths[0]) {
+        StivImageWidget.render(*rect, buffer, stiv_img);
     }
 }
 
