@@ -78,11 +78,9 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
         for (i, col) in cols.into_iter().enumerate() {
             let img_path = match app.image_paths.get(i) {
                 Some(path) => {
-                    println!("Getting {} from image_paths", path);
                     path.clone()
                 },
                 None => {
-                    println!("breaking!");
                     break;
                 }
             };

@@ -2,6 +2,7 @@ use rustix::fs::{ftruncate, Mode};
 use rustix::mm::{mmap, munmap, msync, MapFlags, ProtFlags, MsyncFlags};
 use rustix::shm;
 use rustix::fd::OwnedFd;
+use core::num;
 use std::ptr::null_mut;
 use rand::RngExt;
 use std::slice;

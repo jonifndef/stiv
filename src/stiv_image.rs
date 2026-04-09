@@ -227,11 +227,11 @@ impl StatefulWidget for StivImageWidget {
         state.resize_to_fit(&area);
 
         if let Err(error) = state.move_cursor(&area) {
-            println!("Error in state.move_cursor: {}", error)
+            log::error!("Error in state.move_cursor: {}", error)
         }
 
         if let Err(error) = state.draw() {
-            println!("Error in state.draw: {}", error)
+            log::error!("Error in state.draw: {}", error)
         }
     }
 }
