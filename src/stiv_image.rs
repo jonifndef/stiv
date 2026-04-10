@@ -133,7 +133,6 @@ impl StivImage {
             stdout.flush()?;
         }
 
-
         //let cmd = format!(
         //    "\x1b_Ga=T,f=24,t=s,s={width},v={height},q=2;{path_b64}\x1b\\",
         //);

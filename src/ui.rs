@@ -62,21 +62,20 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
         tot_content_area
     };
 
-    //let mut grid_cells: Vec<Rect> = Vec::new();
-
     let chunk_rows = Layout::default()
         .direction(Direction::Vertical)
         .constraints(vertical_constraints)
         .split(content_area);
 
+    let mut idx = 0;
     for row in chunk_rows.into_iter() {
         let cols = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(horizontal_constraints.clone())
         .split(*row);
 
-        for (i, col) in cols.into_iter().enumerate() {
-            let img_path = match app.image_paths.get(i) {
+        for col in cols.into_iter() {
+            let img_path = match app.image_paths.get(idx) {
                 Some(path) => {
                     path.clone()
                 },
@@ -84,25 +83,11 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
                     break;
                 }
             };
-            //grid_cells.push(*col);
+
             draw_single_image(col, buffer, app, win_info, img_path);
+            idx += 1;
         }
     }
-
-    //let mut idx = 0;
-    //for col in grid_cells.into_iter() {
-    //    if idx == app.image_paths.len() {
-    //        break;
-    //    }
-
-    //    let mut img = match StivImage::new(app.image_paths[idx].clone(), win_info) {
-    //        Ok(img) => img,
-    //        Err(_err) => return
-    //    };
-
-    //    StivImageWidget.render(col, &mut tot_content_buf, &mut img);
-    //    idx += 1;
-    //}
 
     let visible_content = tot_content_buf
         .content
