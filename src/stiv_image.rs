@@ -107,13 +107,12 @@ impl StivImage {
         Ok(())
     }
 
-    pub fn draw(&mut self) -> anyhow::Result<()> {
+    pub fn draw(&mut self, area: &Rect, buf: &mut Buffer) -> anyhow::Result<()> {
         let img = self.resized_image.clone().unwrap_or_else(|| self.dynamic_image.clone());
         let img_rgb = img.into_rgb8();
         let width = img_rgb.width();
         let height = img_rgb.height();
         let img_rgb_raw = img_rgb.into_raw();
-        //let mut stdout = io::stdout();
 
         // ===========================//
         // Make this more obvious, somwthing like "if shm_available()"
@@ -128,9 +127,20 @@ impl StivImage {
                 "\x1b_Ga=T,f=24,t=s,s={width},v={height},q=2;{path_b64}\x1b\\",
             );
 
-            let mut stdout = io::stdout();
-            stdout.write_all(cmd.as_bytes())?;
-            stdout.flush()?;
+            buf.cell_mut((area.x, area.y))
+               .unwrap()
+               .set_symbol(&cmd);
+
+            for y in area.y..area.y + area.height {
+                for x in area.x..area.x + area.width {
+                    if x == area.x && y == area.y {
+                        continue; // the first cell
+                    }
+                    buf.cell_mut((x, y))
+                        .unwrap()
+                        .set_skip(true);
+                }
+            }
         }
 
         //let cmd = format!(
@@ -213,7 +223,7 @@ pub struct StivImageWidget;
 impl StatefulWidget for StivImageWidget {
     type State = StivImage;
 
-    fn render(self, area: Rect, _buf: &mut Buffer, state: &mut StivImage) {
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut StivImage) {
         // TODOS:
         //  - Only resize if it's needed! Compare area with self.resized_image, it might not
         // need to be resized even if we had a resize event from the terminal
@@ -229,7 +239,7 @@ impl StatefulWidget for StivImageWidget {
             log::error!("Error in state.move_cursor: {}", error)
         }
 
-        if let Err(error) = state.draw() {
+        if let Err(error) = state.draw(&area, buf) {
             log::error!("Error in state.draw: {}", error)
         }
     }

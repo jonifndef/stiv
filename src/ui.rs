@@ -38,7 +38,6 @@ fn draw_single_image(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
 }
 
 fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: &WinInfo) {
-    // TODO: Dynamic, wrapping flex layout. Static grid element size, unless we zoom
     let grid_cell_width = 30;
     let grid_cell_height = 12;
 
@@ -50,7 +49,7 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
 
     let tot_content_height = num_vertical_grid_cells * grid_cell_height;
     let tot_content_area = Rect::new(0, 0, win_info.cols, tot_content_height);
-    let tot_content_buf = Buffer::empty(tot_content_area); // this buf will be passed as a mutref to each
+    let mut tot_content_buf = Buffer::empty(tot_content_area); // this buf will be passed as a mutref to each
 
     let scrollbar_needed = app.scroll_offset != 0 || tot_content_height > area.height;
     let content_area = if scrollbar_needed {
@@ -84,7 +83,9 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
                 }
             };
 
-            draw_single_image(col, buffer, app, win_info, img_path);
+            //let msg = format!("Ollebolle: {}", idx);
+            //Paragraph::new(msg).block(Block::new().borders(Borders::ALL)).render(*col, &mut tot_content_buf);
+            draw_single_image(col, &mut tot_content_buf, app, win_info, img_path);
             idx += 1;
         }
     }
@@ -92,8 +93,8 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
     let visible_content = tot_content_buf
         .content
         .into_iter()
-        .skip((area.width * app.scroll_offset) as usize) // it was "area" before
-        .take(area.area() as usize); // same here
+        .skip((area.width * app.scroll_offset) as usize)
+        .take(area.area() as usize);
     for (i, cell) in visible_content.enumerate() {
         let x = i as u16 % area.width;
         let y = i as u16 / area.width;
