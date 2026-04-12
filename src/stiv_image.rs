@@ -235,6 +235,8 @@ impl StatefulWidget for StivImageWidget {
         //  gallery_view
         state.resize_to_fit(&area);
 
+        let mut stdout = io::stdout();
+        stdout.write_all(b"\x1b[s").unwrap();
         if let Err(error) = state.move_cursor(&area) {
             log::error!("Error in state.move_cursor: {}", error)
         }
@@ -242,5 +244,6 @@ impl StatefulWidget for StivImageWidget {
         if let Err(error) = state.draw(&area, buf) {
             log::error!("Error in state.draw: {}", error)
         }
+        stdout.write_all(b"\x1b[u").unwrap();
     }
 }
