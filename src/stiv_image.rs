@@ -1,17 +1,19 @@
-use imagesize::{size, ImageError};
+use imagesize::{size};
 use ratatui::{widgets::StatefulWidget, layout::Rect, buffer::Buffer};
-use rustix::shm;
-use crate::{shm::ShmFile, win_info::WinInfo, App};
+use crate::{shm::ShmFile, win_info::WinInfo, kitty_diacritics};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use std::{io::{self, Write}};
-use std::io::Cursor;
-use image::{DynamicImage, ImageReader};
-use itertools::{Itertools, Position};
+use image::{DynamicImage};
 use fast_image_resize as fir;
 use fast_image_resize::images::Image as FirImage;
+use std::sync::atomic::{AtomicU32, Ordering};
+use ratatui::style::Color;
+
+static NEXT_KITTY_ID: AtomicU32 = AtomicU32::new(1);
 
 const PREFIX: &[u8] = b"\x1b_G";
 const SUFFIX: &[u8] = b"\x1b\\";
+const PLACEHOLDER: &str = "\u{10EEEE}";
 
 pub struct StivImage {
     pub path: String,
@@ -23,7 +25,9 @@ pub struct StivImage {
     size_rows: u16,
     pos_col: u16,
     pos_row: u16,
-    id: u16,
+    id: u32,
+    pub uploaded: bool,
+    pub last_area: Option<Rect>,
     zoom_state: f32,
     dynamic_image: DynamicImage,
     resized_image: Option<DynamicImage>,
@@ -47,7 +51,9 @@ impl StivImage {
             cell_height_px: win_info.cell_height_px,
             pos_col: 0,
             pos_row: 0,
-            id: 0,
+            id: NEXT_KITTY_ID.fetch_add(1, Ordering::Relaxed),
+            uploaded: false,
+            last_area: None,
             zoom_state: 1.0,
             dynamic_image: img,
             resized_image: None,
@@ -55,13 +61,14 @@ impl StivImage {
         })
     }
 
-    pub fn resize_to_fit(&mut self, area: &Rect) {
+    pub fn resize_to_fit(&mut self, area: &Rect) -> Rect {
+        log::info!("resize_to_fit called!");
         let mut new_width = (area.width * self.cell_width_px) as u32;
         let mut new_height = (area.height * self.cell_height_px) as u32;
 
         if new_width > self.width_px as u32 &&
             new_height > self.height_px as u32 {
-            return
+            return Rect::new(area.x, area.y, area.width, area.height)
         }
 
         (new_width, new_height) = self.adjust_for_aspect_ratio(new_width, new_height);
@@ -93,6 +100,9 @@ impl StivImage {
         ).unwrap();
 
         self.resized_image = Some(DynamicImage::ImageRgb8(rgb_image));
+        self.uploaded = false;
+
+        return Rect::new(area.x, area.y, new_width as u16 / self.cell_width_px, new_height as u16 / self.cell_height_px);
     }
 
     pub fn move_cursor(&mut self, area: &Rect) -> anyhow::Result<()> {
@@ -105,6 +115,79 @@ impl StivImage {
         stdout.flush()?;
 
         Ok(())
+    }
+
+    pub fn upload(&mut self, area: &Rect) -> anyhow::Result<()> {
+        let img = self.resized_image.clone().unwrap_or_else(|| self.dynamic_image.clone());
+        let img_rgb = img.into_rgb8();
+        let width = img_rgb.width();
+        let height = img_rgb.height();
+        let img_rgb_raw = img_rgb.into_raw();
+
+        // ===========================//
+        // Make this more obvious, somwthing like "if shm_available()"
+        if let Some(shm_file) = &mut self.shm_file {
+        //    self.draw_using_shm(&stdout, &img_rgb_raw)?;
+        //} else {
+        //    self.draw_using_byte_stream(&stdout, &img_rgb_raw)?;
+
+            shm_file.resize_if_needed(img_rgb_raw.len())?;
+            shm_file.write_to_shm_file(&img_rgb_raw)?;
+
+            let path_b64 = BASE64_STANDARD.encode(shm_file.get_shm_path());
+            let id = self.id;
+            let rows = area.height;
+            let cols = area.width;
+
+            //let cmd = format!(
+            //    "\x1b_Ga=T,f=24,t=s,s={width},v={height},q=2;{path_b64}\x1b\\",
+            //);
+
+            let cmd = format!(
+                "\x1b_Ga=T,f=24,t=s,U=1,i={id},c={cols},r={rows},s={width},v={height},q=2;{path_b64}\x1b\\",
+            );
+
+            let mut stdout = io::stdout();
+            stdout.write_all(cmd.as_bytes())?;
+            stdout.flush()?;
+
+            self.uploaded = true;
+            self.last_area = Some(*area);
+        }
+
+        Ok(())
+    }
+
+    pub fn render_placeholders(&self, area: Rect, buf: &mut Buffer) {
+        let id = self.id;
+
+        // Encode image ID as an RGB foreground color:
+        // red   = (id >> 16) & 0xff
+        // green = (id >>  8) & 0xff
+        // blue  =  id        & 0xff
+        let r = ((id >> 16) & 0xff) as u8;
+        let g = ((id >>  8) & 0xff) as u8;
+        let b = (id         & 0xff) as u8;
+        let color = Color::Rgb(r, g, b);
+
+        for row in 0..area.height {
+            for col in 0..area.width {
+                // Build the placeholder string:
+                // U+10EEEE + row diacritic + column diacritic
+                let row_diacritic = kitty_diacritics::diacritic_for_index(row as u32);
+                let col_diacritic = kitty_diacritics::diacritic_for_index(col as u32);
+
+                let placeholder = format!(
+                    "{PLACEHOLDER}{row_diacritic}{col_diacritic}"
+                );
+
+                let cell = buf.cell_mut((area.x + col, area.y + row));
+                if let Some(cell) = cell {
+                    cell.set_symbol(&placeholder)
+                        .set_fg(color);
+                }
+            }
+        }
     }
 
     pub fn draw(&mut self, area: &Rect, buf: &mut Buffer) -> anyhow::Result<()> {
@@ -224,26 +307,31 @@ impl StatefulWidget for StivImageWidget {
     type State = StivImage;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut StivImage) {
-        // TODOS:
-        //  - Only resize if it's needed! Compare area with self.resized_image, it might not
-        // need to be resized even if we had a resize event from the terminal
-        //  - Encode the kitty image buffer into the buf parameter
-        //  - Maybe (!) set_skip() on cells that shouldn't be overwritten with spaces by Ratatui
-        //  - Use faster resize crate, e.g. fast_image_resize, or even wgpu
-        //  - In draw: Use shared memory for writing kitty buffer to terminal
-        //  - In draw: Use tokio: tokio::io::stdout().write_all(&out_buf).await? to speed up
-        //  gallery_view
-        state.resize_to_fit(&area);
+        let new_area = state.resize_to_fit(&area);
+        //log::info!("area x,y,w,h: {},{},{},{}", area.x, area.y, area.width, area.height);
+        //log::info!("new_area x,y,w,h: {},{},{},{}", new_area.x, new_area.y, new_area.width, new_area.height);
 
-        let mut stdout = io::stdout();
-        stdout.write_all(b"\x1b[s").unwrap();
-        if let Err(error) = state.move_cursor(&area) {
-            log::error!("Error in state.move_cursor: {}", error)
+        //let mut stdout = io::stdout();
+        //stdout.write_all(b"\x1b[s").unwrap();
+        //if let Err(error) = state.move_cursor(&area) {
+        //    log::error!("Error in state.move_cursor: {}", error)
+        //}
+
+        let needs_upload = !state.uploaded
+            || state.last_area != Some(new_area);
+
+        if needs_upload {
+            if let Err(e) = state.upload(&new_area) {
+                log::error!("upload error: {e}");
+                return;
+            }
         }
 
-        if let Err(error) = state.draw(&area, buf) {
-            log::error!("Error in state.draw: {}", error)
-        }
-        stdout.write_all(b"\x1b[u").unwrap();
+        state.render_placeholders(new_area, buf);
+
+        //if let Err(error) = state.draw(&area, buf) {
+        //    log::error!("Error in state.draw: {}", error)
+        //}
+        //stdout.write_all(b"\x1b[u").unwrap();
     }
 }
