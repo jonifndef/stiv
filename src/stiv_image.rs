@@ -8,6 +8,7 @@ use fast_image_resize as fir;
 use fast_image_resize::images::Image as FirImage;
 use std::sync::atomic::{AtomicU32, Ordering};
 use ratatui::style::Color;
+use itertools::{Itertools, Position};
 
 static NEXT_KITTY_ID: AtomicU32 = AtomicU32::new(1);
 
@@ -150,6 +151,7 @@ impl StivImage {
             let mut stdout = io::stdout();
             stdout.write_all(cmd.as_bytes())?;
             stdout.flush()?;
+            std::thread::sleep(std::time::Duration::from_millis(750));
 
             self.uploaded = true;
             self.last_area = Some(*area);
@@ -172,8 +174,6 @@ impl StivImage {
 
         for row in 0..area.height {
             for col in 0..area.width {
-                // Build the placeholder string:
-                // U+10EEEE + row diacritic + column diacritic
                 let row_diacritic = kitty_diacritics::diacritic_for_index(row as u32);
                 let col_diacritic = kitty_diacritics::diacritic_for_index(col as u32);
 
@@ -188,6 +188,43 @@ impl StivImage {
                 }
             }
         }
+    }
+
+    pub fn render_direct_transmission(&mut self) -> anyhow::Result<()> {
+        let img = self.resized_image.clone().unwrap_or_else(|| self.dynamic_image.clone());
+        let img_rgb = img.into_rgb8();
+        let width = img_rgb.width();
+        let height = img_rgb.height();
+        let img_rgb_raw = img_rgb.into_raw();
+
+        let encoded = BASE64_STANDARD.encode(img_rgb_raw);
+
+        let mut m = 1;
+        let chunk_itr = encoded.as_bytes().chunks(4096).with_position();
+        let mut stdout = io::stdout();
+        let mut out_buf: Vec<u8> = Vec::from([]);
+        for (pos, chunk) in chunk_itr {
+            out_buf.extend(PREFIX);
+            // TODO: what if image is only one chunk?
+            if pos == Position::First {
+                out_buf.extend(b"a=T,");
+            }
+            if pos == Position::Last {
+                m = 0;
+            }
+
+            let control_data = format!("f=24,s={width},v={height},q=2,m={m};").into_bytes();
+            out_buf.extend(control_data);
+            out_buf.extend(chunk);
+            out_buf.extend(SUFFIX);
+
+            stdout.write_all(&out_buf)?;
+            out_buf.clear();
+        }
+
+        stdout.flush()?;
+
+        Ok(())
     }
 
     pub fn draw(&mut self, area: &Rect, buf: &mut Buffer) -> anyhow::Result<()> {
@@ -232,38 +269,6 @@ impl StivImage {
 
         //let mut stdout = io::stdout();
         //stdout.write_all(cmd.as_bytes())?;
-        //stdout.flush()?;
-
-        //use std::time::Duration;
-        //use std::thread;
-        //thread::sleep(Duration::from_millis(5));
-        // ===========================//
-
-        //let encoded = BASE64_STANDARD.encode(img_rgb_raw);
-
-        //let mut m = 1;
-        //let chunk_itr = encoded.as_bytes().chunks(4096).with_position();
-        //let mut stdout = io::stdout();
-        //let mut out_buf: Vec<u8> = Vec::from([]);
-        //for (pos, chunk) in chunk_itr {
-        //    out_buf.extend(PREFIX);
-        //    // TODO: what if image is only one chunk?
-        //    if pos == Position::First {
-        //        out_buf.extend(b"a=T,");
-        //    }
-        //    if pos == Position::Last {
-        //        m = 0;
-        //    }
-
-        //    let control_data = format!("f=24,s={width},v={height},q=2,m={m};").into_bytes();
-        //    out_buf.extend(control_data);
-        //    out_buf.extend(chunk);
-        //    out_buf.extend(SUFFIX);
-
-        //    stdout.write_all(&out_buf)?;
-        //    out_buf.clear();
-        //}
-
         //stdout.flush()?;
 
         Ok(())

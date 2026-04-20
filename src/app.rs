@@ -5,9 +5,6 @@ use std::env;
 use std::collections::HashMap;
 use crate::{stiv_image::StivImage, ui};
 
-//use std::time::Duration;
-//use std::thread;
-
 pub struct App {
     exit: bool,
     pub curr_mode: Mode,
@@ -59,11 +56,7 @@ impl App {
 
         while !self.exit {
             terminal.draw(|frame| frame.render_stateful_widget(AppWidget, frame.area(), self))?;
-            //for (key, val) in self.stiv_images.iter() {
-            //    println!("Hashmap key: {}, val: {}", key, val.path);
-            //}
             self.handle_events()?;
-            //thread::sleep(Duration::from_secs(5));
         }
         ratatui::restore();
 

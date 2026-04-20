@@ -24,8 +24,12 @@ fn main() -> Result<(), anyhow::Error> {
     let args = Args::parse();
     logging::setup_logger().unwrap();
 
-    let mut app = App::new(&args.file)?;
-    app.run()?;
+    //let mut app = App::new(&args.file)?;
+    //app.run()?;
+
+    let win_info = win_info::WinInfo::get_win_info()?;
+    let mut stiv_img = stiv_image::StivImage::new(String::from("assets/code.jpg"), &win_info)?;
+    stiv_img.render_direct_transmission()?;
 
     Ok(())
 }
