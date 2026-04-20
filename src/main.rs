@@ -1,6 +1,7 @@
 use clap::Parser;
 use stiv_image::StivImage;
 use app::App;
+use ratatui::prelude::Rect;
 //use shm::ShmFile;
 //use ratatui::layout::Rect;
 
@@ -29,7 +30,9 @@ fn main() -> Result<(), anyhow::Error> {
 
     let win_info = win_info::WinInfo::get_win_info()?;
     let mut stiv_img = stiv_image::StivImage::new(String::from("assets/code.jpg"), &win_info)?;
-    stiv_img.render_direct_transmission()?;
+    //stiv_img.render_direct_transmission()?;
+    let area = Rect::new(0, 0, win_info.cols, win_info.rows);
+    stiv_img.upload_stream(&area)?;
 
     Ok(())
 }

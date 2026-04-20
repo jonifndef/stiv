@@ -118,7 +118,52 @@ impl StivImage {
         Ok(())
     }
 
-    pub fn upload(&mut self, area: &Rect) -> anyhow::Result<()> {
+    pub fn upload_stream(&mut self, area: &Rect) -> anyhow::Result<()> {
+        let img = self.resized_image.as_ref()
+            .unwrap_or(&self.dynamic_image);
+        let img_rgb = img.to_rgb8();
+        let width  = img_rgb.width();
+        let height = img_rgb.height();
+        let raw    = img_rgb.as_raw();
+
+        let encoded = BASE64_STANDARD.encode(raw);
+        let chunks: Vec<&[u8]> = encoded.as_bytes().chunks(4096).collect();
+        let last_idx = chunks.len().saturating_sub(1);
+
+        let id   = self.id;
+        let cols = area.width;
+        let rows = area.height;
+
+        let mut stdout = io::stdout();
+
+        for (i, chunk) in chunks.iter().enumerate() {
+            let is_first = i == 0;
+            let is_last  = i == last_idx;
+            let m = if is_last { 0 } else { 1 };
+
+            let control = if is_first {
+                // All metadata on the first chunk only
+                format!("a=T,f=24,t=d,U=1,i={id},c={cols},r={rows},s={width},v={height},q=2,m={m}")
+            } else {
+                format!("m={m},i={id},q=2")
+            };
+
+            let mut out = Vec::new();
+            out.extend_from_slice(b"\x1b_G");
+            out.extend_from_slice(control.as_bytes());
+            out.push(b';');
+            out.extend_from_slice(chunk);
+            out.extend_from_slice(b"\x1b\\");
+            stdout.write_all(&out)?;
+        }
+
+        stdout.flush()?;
+        self.uploaded = true;
+        self.last_area = Some(*area);
+        Ok(())
+    }
+
+    pub fn upload_shm(&mut self, area: &Rect) -> anyhow::Result<()> {
         let img = self.resized_image.clone().unwrap_or_else(|| self.dynamic_image.clone());
         let img_rgb = img.into_rgb8();
         let width = img_rgb.width();
@@ -326,7 +371,7 @@ impl StatefulWidget for StivImageWidget {
             || state.last_area != Some(new_area);
 
         if needs_upload {
-            if let Err(e) = state.upload(&new_area) {
+            if let Err(e) = state.upload_shm(&new_area) {
                 log::error!("upload error: {e}");
                 return;
             }
