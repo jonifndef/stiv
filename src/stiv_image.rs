@@ -2,7 +2,7 @@ use imagesize::{size};
 use ratatui::{widgets::StatefulWidget, layout::Rect, buffer::Buffer};
 use crate::{shm::ShmFile, win_info::WinInfo, kitty_diacritics};
 use base64::{prelude::BASE64_STANDARD, Engine};
-use std::{io::{self, Write}};
+use std::{io::{self, Write as stdoutWrite}, fmt::Write};
 use image::{DynamicImage};
 use fast_image_resize as fir;
 use fast_image_resize::images::Image as FirImage;
@@ -196,7 +196,7 @@ impl StivImage {
             let mut stdout = io::stdout();
             stdout.write_all(cmd.as_bytes())?;
             stdout.flush()?;
-            std::thread::sleep(std::time::Duration::from_millis(750));
+            //std::thread::sleep(std::time::Duration::from_millis(750));
 
             self.uploaded = true;
             self.last_area = Some(*area);
@@ -226,6 +226,7 @@ impl StivImage {
                     "{PLACEHOLDER}{row_diacritic}{col_diacritic}"
                 );
 
+
                 let cell = buf.cell_mut((area.x + col, area.y + row));
                 if let Some(cell) = cell {
                     cell.set_symbol(&placeholder)
@@ -234,6 +235,49 @@ impl StivImage {
             }
         }
     }
+
+    //pub fn render_placeholders(&self, area: Rect, buf: &mut Buffer) {
+    //    let area = area.intersection(*buf.area());
+    //    let id = self.id;
+    //    let [id_extra, id_r, id_g, id_b] = id.to_be_bytes();
+    //    let id_color = format!("\x1b[38;2;{id_r};{id_g};{id_b}m");
+    //    let right = area.width.saturating_sub(1);
+    //    let down  = area.height.saturating_sub(1);
+
+    //    for y in 0..area.height {
+    //        // Build entire row as one string
+    //        let mut symbol = String::new();
+
+    //        // Save cursor, set colour, write first placeholder with explicit row/col
+    //        write!(
+    //            symbol,
+    //            "\x1b[s{id_color}\u{10EEEE}{}{}{}",
+    //            kitty_diacritics::diacritic_for_index(y as u32),  // row
+    //            kitty_diacritics::diacritic_for_index(0),          // col 0
+    //            kitty_diacritics::diacritic_for_index(id_extra as u32), // id high byte
+    //        ).unwrap();
+
+    //        // Rest of row — bare placeholder chars, column inferred
+    //        symbol.extend(std::iter::repeat_n('\u{10EEEE}', (area.width as usize).saturating_sub(1)));
+
+    //        // Restore cursor then move to bottom-right of image area
+    //        // so ratatui's cursor tracking ends up in the right place
+    //        write!(symbol, "\x1b[u\x1b[{right}C\x1b[{down}B").unwrap();
+
+    //        // Write entire row into first cell of this row
+    //        if let Some(cell) = buf.cell_mut((area.x, area.y + y)) {
+    //            cell.set_symbol(&symbol);
+    //            cell.set_skip(false);
+    //        }
+
+    //        // Skip all other cells in this row
+    //        for col in 1..area.width {
+    //            if let Some(cell) = buf.cell_mut((area.x + col, area.y + y)) {
+    //                cell.set_skip(true);
+    //            }
+    //        }
+    //    }
+    //}
 
     pub fn render_direct_transmission(&mut self) -> anyhow::Result<()> {
         let img = self.resized_image.clone().unwrap_or_else(|| self.dynamic_image.clone());

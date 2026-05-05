@@ -11,6 +11,7 @@ pub struct App {
     pub image_paths: Vec<String>,
     pub scroll_offset: u16,
     pub stiv_images: HashMap<String, StivImage>,
+    //pub current_displayed_img: Option<String>,
 }
 
 pub struct AppWidget;
