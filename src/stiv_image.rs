@@ -71,7 +71,9 @@ impl StivImage {
         log::info!("area.width, area.height: {}, {}", area.width, area.height);
 
         if new_width > self.width_px as u32 &&
-            new_height > self.height_px as u32 {
+            new_height > self.height_px as u32 &&
+            !self.uploaded {
+            log::info!("resize_to_fit: returning original area for {}", self.path);
             return Rect::new(area.x, area.y, area.width, area.height)
         }
 
@@ -194,9 +196,11 @@ impl StivImage {
             //    "\x1b_Ga=T,f=24,t=s,s={width},v={height},q=2;{path_b64}\x1b\\",
             //);
 
-            let cmd = format!(
-                "\x1b_Ga=T,f=24,t=s,U=1,i={id},c={cols},r={rows},s={width},v={height},q=2;{path_b64}\x1b\\",
-            );
+            let cmd = match self.uploaded {
+                true => format!("\x1b_Ga=p,U=1,i={id},c={cols},r={rows},s={width},v={height},q=2\x1b\\"),
+                false => format!("\x1b_Ga=T,f=24,t=s,U=1,i={id},c={cols},r={rows},s={width},v={height},q=2;{path_b64}\x1b\\")
+
+            };
 
             let mut stdout = io::stdout();
             stdout.write_all(cmd.as_bytes())?;
@@ -407,6 +411,8 @@ impl StatefulWidget for StivImageWidget {
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut StivImage) {
         let new_area = state.resize_to_fit(&area);
+
+        log::info!("stiv_image.render: new_area width, height: {},{}", new_area.width, new_area.height);
         //log::info!("area x,y,w,h: {},{},{},{}", area.x, area.y, area.width, area.height);
         //log::info!("new_area x,y,w,h: {},{},{},{}", new_area.x, new_area.y, new_area.width, new_area.height);
 
@@ -420,6 +426,7 @@ impl StatefulWidget for StivImageWidget {
             || state.last_area != Some(new_area);
 
         if needs_upload {
+            log::info!("stiv_image.render: need_upload!");
             if let Err(e) = state.upload_shm(&new_area) {
                 log::error!("upload error: {e}");
                 return;

@@ -11,12 +11,12 @@ pub struct App {
     pub image_paths: Vec<String>,
     pub scroll_offset: u16,
     pub stiv_images: HashMap<String, StivImage>,
-    pub current_selected_grid_element: (usize, usize),
-    pub current_displayed_img: Option<(usize, usize)>,
+    pub current_selected_img_idx: usize,
 }
 
 pub struct AppWidget;
 
+#[derive(PartialEq)]
 pub enum Mode {
     SingleImage,
     GalleryView
@@ -50,8 +50,7 @@ impl App {
             image_paths: image_paths,
             scroll_offset: 0,
             stiv_images: HashMap::new(),
-            current_selected_grid_element: (1,0),
-            current_displayed_img: None,
+            current_selected_img_idx: 0,
         })
     }
 
@@ -71,11 +70,13 @@ impl App {
         if let Some(key) = event::read()?.as_key_press_event() {
             match key.code {
                 KeyCode::Char('q') => self.exit = true,
-                KeyCode::Char('h') => self.current_selected_grid_element.0 = self.current_selected_grid_element.0.saturating_sub(1),
-                KeyCode::Char('j') => self.current_selected_grid_element.1 = self.current_selected_grid_element.1.saturating_add(1),
-                KeyCode::Char('k') => self.current_selected_grid_element.1 = self.current_selected_grid_element.1.saturating_sub(1),
-                KeyCode::Char('l') => self.current_selected_grid_element.0 = self.current_selected_grid_element.0.saturating_add(1),
-                KeyCode::Enter => self.current_displayed_img = Some(self.current_selected_grid_element),
+                KeyCode::Char('h') => self.handle_navigate_left(),
+                KeyCode::Char('j') => self.handle_navigate_down(),
+                KeyCode::Char('k') => self.handle_navigate_up(),
+                KeyCode::Char('l') => self.handle_navigate_right(),
+                KeyCode::Enter => {
+                    self.curr_mode = if self.curr_mode == Mode::GalleryView { Mode::SingleImage } else { Mode::GalleryView };
+                }
                 _ => ()
             }
        }
@@ -83,6 +84,35 @@ impl App {
         Ok(())
     }
 
+    fn handle_navigate_left(&mut self) {
+        match self.curr_mode {
+            Mode::SingleImage => {
+                log::info!("Panning left in SingleImage mode");
+            },
+            Mode::GalleryView => {
+                self.current_selected_img_idx = self.current_selected_img_idx.saturating_sub(1);
+            }
+        }
+    }
+
+    fn handle_navigate_down(&mut self) {
+
+    }
+
+    fn handle_navigate_up(&mut self) {
+
+    }
+
+    fn handle_navigate_right(&mut self) {
+        match self.curr_mode {
+            Mode::SingleImage => {
+                log::info!("Panning right in SingleImage mode");
+            },
+            Mode::GalleryView => {
+                self.current_selected_img_idx = self.current_selected_img_idx.saturating_add(1);
+            }
+        }
+    }
 }
 
 fn get_image_paths(path: &PathBuf) -> io::Result<Vec<String>> {

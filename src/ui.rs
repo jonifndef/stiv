@@ -15,7 +15,7 @@ pub fn ui_draw(rect: &Rect, buf: &mut Buffer, app: &mut App) {
         }
     };
 
-    let img_path = app.image_paths[0].clone();
+    let img_path = app.image_paths[app.current_selected_img_idx].clone();
 
     match app.curr_mode {
         app::Mode::SingleImage => draw_single_image(rect, buf, app, &win_info, img_path),
@@ -32,6 +32,7 @@ fn draw_single_image(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
         }
     }
 
+    log::info!("For image: {}", img_path);
     log::info!("draw_single_image: wininfo cols, rows: {}, {}", win_info.cols, win_info.rows);
     log::info!("draw_single_image: wininfo cell_width_px, cell_height_px: {}, {}", win_info.cell_width_px, win_info.cell_height_px);
     log::info!("draw_single_image: area.width, area.height: {}, {}", area.width, area.height);
@@ -88,11 +89,12 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
             };
 
             draw_single_image(col, &mut tot_content_buf, app, win_info, img_path);
-            idx += 1;
 
-            if app.current_selected_grid_element == (col_idx, row_idx) {
+            if app.current_selected_img_idx == idx {
                 draw_gallery_cursor(col, &mut tot_content_buf)
             }
+
+            idx += 1;
         }
     }
 
