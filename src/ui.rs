@@ -1,4 +1,4 @@
-use ratatui::{prelude::{Widget, StatefulWidget}, layout::{Constraint, Direction, Layout, Rect,}, widgets::{Paragraph, Block, Borders, ScrollbarOrientation, ScrollbarState, Scrollbar}, Frame, buffer::Buffer};
+use ratatui::{buffer::Buffer, layout::{Constraint, Direction, Layout, Rect,}, prelude::{StatefulWidget, Widget}, style::{Color, Style}, widgets::{Block, BorderType, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState}, Frame};
 use crate::{app, win_info::WinInfo, App};
 use crate::StivImage;
 use crate::stiv_image::StivImageWidget;
@@ -31,6 +31,10 @@ fn draw_single_image(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
             return
         }
     }
+
+    log::info!("draw_single_image: wininfo cols, rows: {}, {}", win_info.cols, win_info.rows);
+    log::info!("draw_single_image: wininfo cell_width_px, cell_height_px: {}, {}", win_info.cell_width_px, win_info.cell_height_px);
+    log::info!("draw_single_image: area.width, area.height: {}, {}", area.width, area.height);
 
     if let Some(stiv_img) = app.stiv_images.get_mut(&img_path) {
         StivImageWidget.render(*area, buffer, stiv_img);
@@ -67,13 +71,13 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
         .split(content_area);
 
     let mut idx = 0;
-    for row in chunk_rows.into_iter() {
+    for (row_idx, row) in chunk_rows.into_iter().enumerate() {
         let cols = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(horizontal_constraints.clone())
         .split(*row);
 
-        for col in cols.into_iter() {
+        for (col_idx, col) in cols.into_iter().enumerate() {
             let img_path = match app.image_paths.get(idx) {
                 Some(path) => {
                     path.clone()
@@ -83,10 +87,12 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
                 }
             };
 
-            //let msg = format!("Ollebolle: {}", idx);
-            //Paragraph::new(msg).block(Block::new().borders(Borders::ALL)).render(*col, &mut tot_content_buf);
             draw_single_image(col, &mut tot_content_buf, app, win_info, img_path);
             idx += 1;
+
+            if app.current_selected_grid_element == (col_idx, row_idx) {
+                draw_gallery_cursor(col, &mut tot_content_buf)
+            }
         }
     }
 
@@ -107,4 +113,12 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
             .position(app.scroll_offset as usize);
         Scrollbar::new(ScrollbarOrientation::VerticalRight).render(area, buffer, &mut state);
     }
+}
+
+fn draw_gallery_cursor(area: &Rect, buf: &mut Buffer) {
+    Block::new()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Thick)
+        .border_style(Style::new().fg(Color::Yellow))
+        .render(*area, buf);
 }

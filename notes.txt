@@ -1,7 +1,3 @@
-things to try:
-- use unicode placeholders without shm, old standard full image data in escape sequence
-- 
-
 fix zoom and pan
 fix borders with image names (both in gallery mode and single image mode)
 fix gallery navigation with cursor, goto SingleImage mode
@@ -19,3 +15,4 @@ fix error handling, make error types more consistent
 fix imports, they look like crap now
 fix a nice README.md with some checkboxes and some cool logo
 fix auto-update on file change
+fix image deletions on exit

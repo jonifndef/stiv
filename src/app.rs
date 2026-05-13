@@ -11,7 +11,8 @@ pub struct App {
     pub image_paths: Vec<String>,
     pub scroll_offset: u16,
     pub stiv_images: HashMap<String, StivImage>,
-    //pub current_displayed_img: Option<String>,
+    pub current_selected_grid_element: (usize, usize),
+    pub current_displayed_img: Option<(usize, usize)>,
 }
 
 pub struct AppWidget;
@@ -49,6 +50,8 @@ impl App {
             image_paths: image_paths,
             scroll_offset: 0,
             stiv_images: HashMap::new(),
+            current_selected_grid_element: (1,0),
+            current_displayed_img: None,
         })
     }
 
@@ -68,8 +71,11 @@ impl App {
         if let Some(key) = event::read()?.as_key_press_event() {
             match key.code {
                 KeyCode::Char('q') => self.exit = true,
-                KeyCode::Char('j') => self.scroll_offset = self.scroll_offset.saturating_add(4),
-                KeyCode::Char('k') => self.scroll_offset = self.scroll_offset.saturating_sub(4),
+                KeyCode::Char('h') => self.current_selected_grid_element.0 = self.current_selected_grid_element.0.saturating_sub(1),
+                KeyCode::Char('j') => self.current_selected_grid_element.1 = self.current_selected_grid_element.1.saturating_add(1),
+                KeyCode::Char('k') => self.current_selected_grid_element.1 = self.current_selected_grid_element.1.saturating_sub(1),
+                KeyCode::Char('l') => self.current_selected_grid_element.0 = self.current_selected_grid_element.0.saturating_add(1),
+                KeyCode::Enter => self.current_displayed_img = Some(self.current_selected_grid_element),
                 _ => ()
             }
        }

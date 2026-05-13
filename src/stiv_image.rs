@@ -2,7 +2,7 @@ use imagesize::{size};
 use ratatui::{widgets::StatefulWidget, layout::Rect, buffer::Buffer};
 use crate::{shm::ShmFile, win_info::WinInfo, kitty_diacritics};
 use base64::{prelude::BASE64_STANDARD, Engine};
-use std::{io::{self, Write as stdoutWrite}, fmt::Write};
+use std::{fmt::Write, io::{self, Write as stdoutWrite}, thread, time::Duration};
 use image::{DynamicImage};
 use fast_image_resize as fir;
 use fast_image_resize::images::Image as FirImage;
@@ -66,6 +66,9 @@ impl StivImage {
         log::info!("resize_to_fit called!");
         let mut new_width = (area.width * self.cell_width_px) as u32;
         let mut new_height = (area.height * self.cell_height_px) as u32;
+        log::info!("new_width: {}", new_width);
+        log::info!("new_height: {}", new_height);
+        log::info!("area.width, area.height: {}, {}", area.width, area.height);
 
         if new_width > self.width_px as u32 &&
             new_height > self.height_px as u32 {
@@ -169,6 +172,7 @@ impl StivImage {
         let width = img_rgb.width();
         let height = img_rgb.height();
         let img_rgb_raw = img_rgb.into_raw();
+        log::info!("in upload_shm: width, height: {}, {}", width, height);
 
         // ===========================//
         // Make this more obvious, somwthing like "if shm_available()"
@@ -182,8 +186,9 @@ impl StivImage {
 
             let path_b64 = BASE64_STANDARD.encode(shm_file.get_shm_path());
             let id = self.id;
-            let rows = area.height;
+            let rows = area.height - 1;
             let cols = area.width;
+            log::info!("in upload_shm: cols, rows: {}, {}", cols, rows);
 
             //let cmd = format!(
             //    "\x1b_Ga=T,f=24,t=s,s={width},v={height},q=2;{path_b64}\x1b\\",
