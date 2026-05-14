@@ -402,6 +402,17 @@ impl StivImage {
         // round the result?
         return (test_width as u32, new_height);
     }
+
+    pub fn delete_from_terminal(&mut self) {
+        if !self.uploaded { return; }
+        let id = self.id;
+        let cmd = format!("\x1b_Ga=d,d=I,i={id},q=2\x1b\\");
+        let mut stdout = io::stdout();
+        let _ = stdout.write_all(cmd.as_bytes());
+        let _ = stdout.flush();
+        self.uploaded = false;
+        self.last_area = None;
+    }
 }
 
 pub struct StivImageWidget;
@@ -413,14 +424,6 @@ impl StatefulWidget for StivImageWidget {
         let new_area = state.resize_to_fit(&area);
 
         log::info!("stiv_image.render: new_area width, height: {},{}", new_area.width, new_area.height);
-        //log::info!("area x,y,w,h: {},{},{},{}", area.x, area.y, area.width, area.height);
-        //log::info!("new_area x,y,w,h: {},{},{},{}", new_area.x, new_area.y, new_area.width, new_area.height);
-
-        //let mut stdout = io::stdout();
-        //stdout.write_all(b"\x1b[s").unwrap();
-        //if let Err(error) = state.move_cursor(&area) {
-        //    log::error!("Error in state.move_cursor: {}", error)
-        //}
 
         let needs_upload = !state.uploaded
             || state.last_area != Some(new_area);
@@ -434,10 +437,5 @@ impl StatefulWidget for StivImageWidget {
         }
 
         state.render_placeholders(new_area, buf);
-
-        //if let Err(error) = state.draw(&area, buf) {
-        //    log::error!("Error in state.draw: {}", error)
-        //}
-        //stdout.write_all(b"\x1b[u").unwrap();
     }
 }

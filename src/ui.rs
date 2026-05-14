@@ -1,3 +1,4 @@
+use chrono::Duration;
 use ratatui::{buffer::Buffer, layout::{Constraint, Direction, Layout, Rect,}, prelude::{StatefulWidget, Widget}, style::{Color, Style}, widgets::{Block, BorderType, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState}, Frame};
 use crate::{app, win_info::WinInfo, App};
 use crate::StivImage;
@@ -15,10 +16,16 @@ pub fn ui_draw(rect: &Rect, buf: &mut Buffer, app: &mut App) {
         }
     };
 
-    let img_path = app.image_paths[app.current_selected_img_idx].clone();
-
     match app.curr_mode {
-        app::Mode::SingleImage => draw_single_image(rect, buf, app, &win_info, img_path),
+        app::Mode::SingleImage => {
+            let img_path = app.image_paths[app.current_selected_img_idx].clone();
+            if let Some(img) = app.stiv_images.get_mut(&img_path) {
+                img.delete_from_terminal();
+                std::thread::sleep(std::time::Duration::from_millis(750));
+
+            }
+            draw_single_image(rect, buf, app, &win_info, img_path);
+        },
         app::Mode::GalleryView => draw_gallery_view(rect, buf, app, &win_info)
     }
 }
