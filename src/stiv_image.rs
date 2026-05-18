@@ -448,7 +448,7 @@ pub struct StivImageWidget;
 impl StatefulWidget for StivImageWidget {
     type State = StivImage;
 
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut StivImage) {
+    fn render(self, area: Rect, _buf: &mut Buffer, state: &mut StivImage) {
         let new_area = state.resize_to_fit(&area);
 
         log::info!("stiv_image.render: new_area width, height: {},{}", new_area.width, new_area.height);
@@ -458,12 +458,17 @@ impl StatefulWidget for StivImageWidget {
 
         if needs_upload {
             log::info!("stiv_image.render: need_upload!");
-            if let Err(e) = state.upload_shm(&new_area) {
+            //if let Err(e) = state.upload_shm(&new_area) {
+            //    log::error!("upload error: {e}");
+            //    return;
+            //}
+            if let Err(e) = state.upload_stream(&new_area) {
                 log::error!("upload error: {e}");
                 return;
             }
         }
 
-        state.render_placeholders(new_area, buf);
+        //state.render_placeholders(new_area, buf);
+        state.render_placeholders_without_ratatui_buf(new_area);
     }
 }

@@ -55,25 +55,14 @@ impl App {
     }
 
     pub fn run(&mut self) -> anyhow::Result<()> {
-        //let mut terminal = ratatui::init();
+        let mut terminal = ratatui::init();
 
         while !self.exit {
-            //terminal.draw(|frame| frame.render_stateful_widget(AppWidget, frame.area(), self))?;
+            terminal.draw(|frame| frame.render_stateful_widget(AppWidget, frame.area(), self))?;
 
-            let win_info = win_info::WinInfo::get_win_info()?;
-            let mut stiv_img = StivImage::new(String::from("assets/code.jpg"), &win_info)?;
-            ////stiv_img.render_direct_transmission()?;
-            use ratatui::layout::Rect;
-            let area = Rect::new(0, 0, win_info.cols, win_info.rows);
-            stiv_img.resize_to_fit(&area);
-            stiv_img.upload_stream(&area)?;
-            //use ratatui::{buffer::Buffer, prelude::Rect};
-            //let mut buf = Buffer::empty(area);
-            //stiv_img.render_placeholders(area, &mut buf);
-            stiv_img.render_placeholders_without_ratatui_buf(area);
             self.handle_events()?;
         }
-        //ratatui::restore();
+        ratatui::restore();
 
         Ok(())
     }
