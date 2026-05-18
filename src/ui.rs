@@ -1,5 +1,5 @@
-use chrono::Duration;
-use ratatui::{buffer::Buffer, layout::{Constraint, Direction, Layout, Rect,}, prelude::{StatefulWidget, Widget}, style::{Color, Style}, widgets::{Block, BorderType, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState}, Frame};
+//use chrono::Duration;
+use ratatui::{buffer::Buffer, layout::{Constraint, Direction, Layout, Rect,}, prelude::{StatefulWidget, Widget}, style::{Color, Style}, widgets::{Block, BorderType, Borders, Scrollbar, ScrollbarOrientation, ScrollbarState}};
 use crate::{app, win_info::WinInfo, App};
 use crate::StivImage;
 use crate::stiv_image::StivImageWidget;
@@ -19,11 +19,11 @@ pub fn ui_draw(rect: &Rect, buf: &mut Buffer, app: &mut App) {
     match app.curr_mode {
         app::Mode::SingleImage => {
             let img_path = app.image_paths[app.current_selected_img_idx].clone();
-            if let Some(img) = app.stiv_images.get_mut(&img_path) {
-                img.delete_from_terminal();
-                std::thread::sleep(std::time::Duration::from_millis(750));
+            //if let Some(img) = app.stiv_images.get_mut(&img_path) {
+            //    img.delete_from_terminal();
+            //    std::thread::sleep(std::time::Duration::from_millis(750));
 
-            }
+            //}
             draw_single_image(rect, buf, app, &win_info, img_path);
         },
         app::Mode::GalleryView => draw_gallery_view(rect, buf, app, &win_info)
@@ -39,10 +39,10 @@ fn draw_single_image(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
         }
     }
 
-    log::info!("For image: {}", img_path);
-    log::info!("draw_single_image: wininfo cols, rows: {}, {}", win_info.cols, win_info.rows);
-    log::info!("draw_single_image: wininfo cell_width_px, cell_height_px: {}, {}", win_info.cell_width_px, win_info.cell_height_px);
-    log::info!("draw_single_image: area.width, area.height: {}, {}", area.width, area.height);
+    //log::info!("For image: {}", img_path);
+    //log::info!("draw_single_image: wininfo cols, rows: {}, {}", win_info.cols, win_info.rows);
+    //log::info!("draw_single_image: wininfo cell_width_px, cell_height_px: {}, {}", win_info.cell_width_px, win_info.cell_height_px);
+    //log::info!("draw_single_image: area.width, area.height: {}, {}", area.width, area.height);
 
     if let Some(stiv_img) = app.stiv_images.get_mut(&img_path) {
         StivImageWidget.render(*area, buffer, stiv_img);
@@ -79,13 +79,13 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
         .split(content_area);
 
     let mut idx = 0;
-    for (row_idx, row) in chunk_rows.into_iter().enumerate() {
+    for row in chunk_rows.into_iter() {
         let cols = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(horizontal_constraints.clone())
         .split(*row);
 
-        for (col_idx, col) in cols.into_iter().enumerate() {
+        for col in cols.into_iter() {
             let img_path = match app.image_paths.get(idx) {
                 Some(path) => {
                     path.clone()

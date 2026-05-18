@@ -136,8 +136,8 @@ impl StivImage {
         let last_idx = chunks.len().saturating_sub(1);
 
         let id   = self.id;
-        let cols = area.width;
-        let rows = area.height;
+        //let cols = area.width;
+        //let rows = area.height;
 
         let mut stdout = io::stdout();
 
@@ -148,7 +148,8 @@ impl StivImage {
 
             let control = if is_first {
                 // All metadata on the first chunk only
-                format!("a=T,f=24,t=d,U=1,i={id},c={cols},r={rows},s={width},v={height},q=2,m={m}")
+                //format!("a=T,f=24,t=d,U=1,i={id},c={cols},r={rows},s={width},v={height},q=2,m={m}")
+                format!("a=T,f=24,t=d,C=1,U=1,i={id},s={width},v={height},q=2,m={m}")
             } else {
                 format!("m={m},i={id},q=2")
             };
@@ -241,6 +242,33 @@ impl StivImage {
                     cell.set_symbol(&placeholder)
                         .set_fg(color);
                 }
+            }
+        }
+    }
+
+    pub fn render_placeholders_without_ratatui_buf(&self, area: Rect) {
+        let id = self.id;
+        let mut stdout = io::stdout();
+
+        // Encode image ID as an RGB foreground color:
+        // red   = (id >> 16) & 0xff
+        // green = (id >>  8) & 0xff
+        // blue  =  id        & 0xff
+        let r = ((id >> 16) & 0xff) as u8;
+        let g = ((id >>  8) & 0xff) as u8;
+        let b = (id         & 0xff) as u8;
+
+        let _ = stdout.write_all(format!("\x1b[38;2;{};{};{}m", r, g, b).as_bytes());
+
+        for row in 0..area.height {
+            let _ = stdout.write_all(format!("\x1b[{};{}H", area.y + row + 1, area.x + 1).as_bytes());
+            for col in 0..area.width {
+                let row_diacritic = kitty_diacritics::diacritic_for_index(row as u32);
+                let col_diacritic = kitty_diacritics::diacritic_for_index(col as u32);
+
+                let _ = stdout.write_all(format!(
+                    "{}{}{}", PLACEHOLDER, row_diacritic, col_diacritic
+                ).as_bytes());
             }
         }
     }
