@@ -3,15 +3,21 @@ use ratatui::{widgets::StatefulWidget, buffer::Buffer, prelude::Rect};
 use std::{fs, io, path::{self, Path, PathBuf}};
 use std::env;
 use std::collections::HashMap;
-use crate::{stiv_image::StivImage, ui, win_info};
+use crate::{stiv_image::StivImage, ui};
 
 pub struct App {
     exit: bool,
     pub curr_mode: Mode,
     pub image_paths: Vec<String>,
-    pub scroll_offset: u16,
     pub stiv_images: HashMap<String, StivImage>,
+    pub ui: ui::Ui,
+    pub scroll_offset: u16,
     pub current_selected_img_idx: usize,
+    pub num_horizontal_grid_cells: usize,
+    pub num_vertical_grid_cells: usize,
+    pub grid_cell_width: usize,
+    pub grid_cell_height: usize,
+    pub visible_rows_under_selected_image: u16,
 }
 
 pub struct AppWidget;
@@ -48,9 +54,15 @@ impl App {
                 _ => Mode::GalleryView
             },
             image_paths: image_paths,
+            ui: ui::new(),
             scroll_offset: 0,
             stiv_images: HashMap::new(),
             current_selected_img_idx: 0,
+            num_horizontal_grid_cells: 0,
+            num_vertical_grid_cells: 0,
+            grid_cell_width: 30,
+            grid_cell_height: 12,
+            visible_rows_under_selected_image: 0,
         })
     }
 
@@ -78,6 +90,9 @@ impl App {
                 KeyCode::Enter => {
                     self.curr_mode = if self.curr_mode == Mode::GalleryView { Mode::SingleImage } else { Mode::GalleryView };
                 }
+                KeyCode::Char('+') => {
+                    todo!();
+                }
                 _ => ()
             }
        }
@@ -91,17 +106,49 @@ impl App {
                 log::info!("Panning left in SingleImage mode");
             },
             Mode::GalleryView => {
+                if self.current_selected_img_idx % self.num_horizontal_grid_cells == 0 {
+                    return
+                }
+
                 self.current_selected_img_idx = self.current_selected_img_idx.saturating_sub(1);
             }
         }
     }
 
     fn handle_navigate_down(&mut self) {
+        match self.curr_mode {
+            Mode::SingleImage => {
+                log::info!("Panning down in SingleImage mode");
+            },
+            Mode::GalleryView => {
+                if self.current_selected_img_idx >= self.stiv_images.len() - self.num_horizontal_grid_cells {
+                    return
+                }
 
+                self.current_selected_img_idx = self.current_selected_img_idx + self.num_horizontal_grid_cells;
+
+                if self.visible_rows_under_selected_image < self.grid_cell_height as u16 {
+                    self.scroll_offset = self.scroll_offset.saturating_add(self.grid_cell_height as u16 - self.visible_rows_under_selected_image);
+                }
+            }
+        }
     }
 
     fn handle_navigate_up(&mut self) {
+        match self.curr_mode {
+            Mode::SingleImage => {
+                log::info!("Panning up in SingleImage mode");
+            },
+            Mode::GalleryView => {
+                if self.current_selected_img_idx < self.num_horizontal_grid_cells {
+                    return
+                }
 
+                self.current_selected_img_idx = self.current_selected_img_idx - self.num_horizontal_grid_cells;
+
+                if 
+            }
+        }
     }
 
     fn handle_navigate_right(&mut self) {
@@ -110,6 +157,10 @@ impl App {
                 log::info!("Panning right in SingleImage mode");
             },
             Mode::GalleryView => {
+                if (self.current_selected_img_idx % self.num_horizontal_grid_cells) == (self.num_horizontal_grid_cells - 1) {
+                    return
+                }
+
                 self.current_selected_img_idx = self.current_selected_img_idx.saturating_add(1);
             }
         }

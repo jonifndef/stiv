@@ -5,6 +5,36 @@ use crate::StivImage;
 use crate::stiv_image::StivImageWidget;
 //use std::iter;
 
+pub struct GalleryCursor {
+    pub area: Rect,
+    pub col: u16,
+    pub row: u16,
+}
+
+pub struct Ui {
+    pub scroll_offset: u16,
+    pub current_selected_img_idx: usize,
+    pub num_horizontal_grid_cells: usize,
+    pub num_vertical_grid_cells: usize,
+    pub grid_cell_width: usize,
+    pub grid_cell_height: usize,
+    pub visible_rows_under_selected_image: u16,
+}
+
+impl Ui {
+    pub fn new() -> Self {
+        Ui {
+            scroll_offset: 0,
+            current_selected_img_idx: 0,
+            num_horizontal_grid_cells: 0,
+            num_vertical_grid_cells: 0,
+            grid_cell_width: 0,
+            grid_cell_height: 0,
+            visible_rows_under_selected_image: 0,
+        }
+    }
+}
+
 // Set grid size based on terminal window cols,rows
 // 30x12 cells is a pretty good size to start with, per grid cell
 pub fn ui_draw(rect: &Rect, buf: &mut Buffer, app: &mut App) {
@@ -50,16 +80,16 @@ fn draw_single_image(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
 }
 
 fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: &WinInfo) {
-    let grid_cell_width = 30;
-    let grid_cell_height = 12;
-
-    let num_horizontal_grid_cells = (win_info.cols / grid_cell_width) as u16;
+    let num_horizontal_grid_cells = (win_info.cols / app.grid_cell_width as u16) as u16;
     let num_vertical_grid_cells = (app.image_paths.len() as u16 + num_horizontal_grid_cells - 1) / num_horizontal_grid_cells as u16;
 
-    let horizontal_constraints = vec![Constraint::Length(grid_cell_width); num_horizontal_grid_cells as usize];
-    let vertical_constraints = vec![Constraint::Length(grid_cell_height); num_vertical_grid_cells as usize];
+    app.num_horizontal_grid_cells = num_horizontal_grid_cells as usize;
+    app.num_vertical_grid_cells = num_vertical_grid_cells as usize;
 
-    let tot_content_height = num_vertical_grid_cells * grid_cell_height;
+    let horizontal_constraints = vec![Constraint::Length(app.grid_cell_width as u16); num_horizontal_grid_cells as usize];
+    let vertical_constraints = vec![Constraint::Length(app.grid_cell_height as u16); num_vertical_grid_cells as usize];
+
+    let tot_content_height = num_vertical_grid_cells * app.grid_cell_height as u16;
     let tot_content_area = Rect::new(0, 0, win_info.cols, tot_content_height);
     let mut tot_content_buf = Buffer::empty(tot_content_area); // this buf will be passed as a mutref to each
 
@@ -79,13 +109,13 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
         .split(content_area);
 
     let mut idx = 0;
-    for row in chunk_rows.into_iter() {
+    for (row_idx, row) in chunk_rows.into_iter().enumerate() {
         let cols = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(horizontal_constraints.clone())
         .split(*row);
 
-        for col in cols.into_iter() {
+        for (col_idx, col) in cols.into_iter().enumerate() {
             let img_path = match app.image_paths.get(idx) {
                 Some(path) => {
                     path.clone()
@@ -98,7 +128,8 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
             draw_single_image(col, &mut tot_content_buf, app, win_info, img_path);
 
             if app.current_selected_img_idx == idx {
-                draw_gallery_cursor(col, &mut tot_content_buf)
+                update_gallery_cursor(col, row_idx, col_idx);
+                draw_gallery_cursor(col, &mut tot_content_buf);
             }
 
             idx += 1;
@@ -110,6 +141,7 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
         .into_iter()
         .skip((area.width * app.scroll_offset) as usize)
         .take(area.area() as usize);
+
     for (i, cell) in visible_content.enumerate() {
         let x = i as u16 % area.width;
         let y = i as u16 / area.width;
@@ -118,10 +150,19 @@ fn draw_gallery_view(area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: 
 
     if scrollbar_needed {
         let area = area.intersection(buffer.area);
-        let mut state = ScrollbarState::new(((num_vertical_grid_cells - 1) * grid_cell_height) as usize)
+        let mut state = ScrollbarState::new(((num_vertical_grid_cells - 1) * app.grid_cell_height as u16) as usize)
             .position(app.scroll_offset as usize);
         Scrollbar::new(ScrollbarOrientation::VerticalRight).render(area, buffer, &mut state);
     }
+
+    let current_selected_row = app.current_selected_img_idx / app.num_horizontal_grid_cells + 1;
+    app.visible_rows_under_selected_image = area.height.saturating_sub(current_selected_row as u16 * app.grid_cell_height as u16);
+    log::info!("visible_rows_under_selected_image: {}", app.visible_rows_under_selected_image);
+    log::info!("area height: {}", area.height);
+}
+
+fn update_gallery_cursor(area: &Rect, row_idx: usize, col_idx: usize) {
+    self.gallery_cursor.
 }
 
 fn draw_gallery_cursor(area: &Rect, buf: &mut Buffer) {

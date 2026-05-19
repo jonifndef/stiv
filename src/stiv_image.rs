@@ -63,17 +63,17 @@ impl StivImage {
     }
 
     pub fn resize_to_fit(&mut self, area: &Rect) -> Rect {
-        log::info!("resize_to_fit called!");
+        //log::info!("resize_to_fit called!");
         let mut new_width = (area.width * self.cell_width_px) as u32;
         let mut new_height = (area.height * self.cell_height_px) as u32;
-        log::info!("new_width: {}", new_width);
-        log::info!("new_height: {}", new_height);
-        log::info!("area.width, area.height: {}, {}", area.width, area.height);
+        //log::info!("new_width: {}", new_width);
+        //log::info!("new_height: {}", new_height);
+        //log::info!("area.width, area.height: {}, {}", area.width, area.height);
 
         if new_width > self.width_px as u32 &&
             new_height > self.height_px as u32 &&
             !self.uploaded {
-            log::info!("resize_to_fit: returning original area for {}", self.path);
+            //log::info!("resize_to_fit: returning original area for {}", self.path);
             return Rect::new(area.x, area.y, area.width, area.height)
         }
 
@@ -175,7 +175,7 @@ impl StivImage {
         let width = img_rgb.width();
         let height = img_rgb.height();
         let img_rgb_raw = img_rgb.into_raw();
-        log::info!("in upload_shm: width, height: {}, {}", width, height);
+        //log::info!("in upload_shm: width, height: {}, {}", width, height);
 
         // ===========================//
         // Make this more obvious, somwthing like "if shm_available()"
@@ -191,7 +191,7 @@ impl StivImage {
             let id = self.id;
             let rows = area.height - 1;
             let cols = area.width;
-            log::info!("in upload_shm: cols, rows: {}, {}", cols, rows);
+            //log::info!("in upload_shm: cols, rows: {}, {}", cols, rows);
 
             //let cmd = format!(
             //    "\x1b_Ga=T,f=24,t=s,s={width},v={height},q=2;{path_b64}\x1b\\",
@@ -451,13 +451,13 @@ impl StatefulWidget for StivImageWidget {
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut StivImage) {
         let new_area = state.resize_to_fit(&area);
 
-        log::info!("stiv_image.render: new_area width, height: {},{}", new_area.width, new_area.height);
+        //log::info!("stiv_image.render: new_area width, height: {},{}", new_area.width, new_area.height);
 
         let needs_upload = !state.uploaded
             || state.last_area != Some(new_area);
 
         if needs_upload {
-            log::info!("stiv_image.render: need_upload!");
+            //log::info!("stiv_image.render: need_upload!");
             //if let Err(e) = state.upload_shm(&new_area) {
             //    log::error!("upload error: {e}");
             //    return;
