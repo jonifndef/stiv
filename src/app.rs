@@ -11,13 +11,6 @@ pub struct App {
     pub image_paths: Vec<String>,
     pub stiv_images: HashMap<String, StivImage>,
     pub ui: ui::Ui,
-    pub scroll_offset: u16,
-    pub current_selected_img_idx: usize,
-    pub num_horizontal_grid_cells: usize,
-    pub num_vertical_grid_cells: usize,
-    pub grid_cell_width: usize,
-    pub grid_cell_height: usize,
-    pub visible_rows_under_selected_image: u16,
 }
 
 pub struct AppWidget;
@@ -54,15 +47,8 @@ impl App {
                 _ => Mode::GalleryView
             },
             image_paths: image_paths,
-            ui: ui::new(),
-            scroll_offset: 0,
             stiv_images: HashMap::new(),
-            current_selected_img_idx: 0,
-            num_horizontal_grid_cells: 0,
-            num_vertical_grid_cells: 0,
-            grid_cell_width: 30,
-            grid_cell_height: 12,
-            visible_rows_under_selected_image: 0,
+            ui: ui::Ui::new(),
         })
     }
 
@@ -106,11 +92,11 @@ impl App {
                 log::info!("Panning left in SingleImage mode");
             },
             Mode::GalleryView => {
-                if self.current_selected_img_idx % self.num_horizontal_grid_cells == 0 {
+                if self.ui.current_selected_img_idx % self.ui.num_horizontal_grid_cells == 0 {
                     return
                 }
 
-                self.current_selected_img_idx = self.current_selected_img_idx.saturating_sub(1);
+                self.ui.current_selected_img_idx = self.ui.current_selected_img_idx.saturating_sub(1);
             }
         }
     }
@@ -121,14 +107,14 @@ impl App {
                 log::info!("Panning down in SingleImage mode");
             },
             Mode::GalleryView => {
-                if self.current_selected_img_idx >= self.stiv_images.len() - self.num_horizontal_grid_cells {
+                if self.ui.current_selected_img_idx >= self.stiv_images.len() - self.ui.num_horizontal_grid_cells {
                     return
                 }
 
-                self.current_selected_img_idx = self.current_selected_img_idx + self.num_horizontal_grid_cells;
+                self.ui.current_selected_img_idx = self.ui.current_selected_img_idx + self.ui.num_horizontal_grid_cells;
 
-                if self.visible_rows_under_selected_image < self.grid_cell_height as u16 {
-                    self.scroll_offset = self.scroll_offset.saturating_add(self.grid_cell_height as u16 - self.visible_rows_under_selected_image);
+                if self.ui.visible_rows_under_selected_image < self.ui.grid_cell_height as u16 {
+                    self.ui.scroll_offset = self.ui.scroll_offset.saturating_add(self.ui.grid_cell_height as u16 - self.ui.visible_rows_under_selected_image);
                 }
             }
         }
@@ -140,13 +126,13 @@ impl App {
                 log::info!("Panning up in SingleImage mode");
             },
             Mode::GalleryView => {
-                if self.current_selected_img_idx < self.num_horizontal_grid_cells {
+                if self.ui.current_selected_img_idx < self.ui.num_horizontal_grid_cells {
                     return
                 }
 
-                self.current_selected_img_idx = self.current_selected_img_idx - self.num_horizontal_grid_cells;
+                self.ui.current_selected_img_idx = self.ui.current_selected_img_idx - self.ui.num_horizontal_grid_cells;
 
-                if 
+                //if
             }
         }
     }
@@ -157,11 +143,11 @@ impl App {
                 log::info!("Panning right in SingleImage mode");
             },
             Mode::GalleryView => {
-                if (self.current_selected_img_idx % self.num_horizontal_grid_cells) == (self.num_horizontal_grid_cells - 1) {
+                if (self.ui.current_selected_img_idx % self.ui.num_horizontal_grid_cells) == (self.ui.num_horizontal_grid_cells - 1) {
                     return
                 }
 
-                self.current_selected_img_idx = self.current_selected_img_idx.saturating_add(1);
+                self.ui.current_selected_img_idx = self.ui.current_selected_img_idx.saturating_add(1);
             }
         }
     }
@@ -217,6 +203,8 @@ impl StatefulWidget for AppWidget {
     type State = App;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut App) {
-        ui::ui_draw(&area, buf, state);
+        let mut ui = std::mem::take(&mut state.ui);
+        ui.ui_draw(&area, buf, state);
+        state.ui = ui;
     }
 }
