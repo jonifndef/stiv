@@ -139,6 +139,8 @@ impl Ui {
 
                 self.draw_single_image(col, &mut tot_content_buf, app, win_info, &img_path);
 
+                // the problem is that the y value of the cursor rect is not updated when the
+                // scroll buffer is moved, it lags behind, so to speak
                 if self.current_selected_img_idx == idx {
                     self.update_gallery_cursor(col, row_idx, col_idx);
                     self.draw_gallery_cursor(col, &img_path, &mut tot_content_buf);
@@ -169,14 +171,18 @@ impl Ui {
 
         let current_selected_row = self.current_selected_img_idx / self.num_horizontal_grid_cells + 1;
         self.visible_rows_under_selected_image = area.height.saturating_sub(current_selected_row as u16 * self.grid_cell_height as u16);
-        log::info!("visible_rows_under_selected_image: {}", self.visible_rows_under_selected_image);
-        log::info!("area height: {}", area.height);
+        //log::info!("visible_rows_under_selected_image: {}", self.visible_rows_under_selected_image);
+        //log::info!("area height: {}", area.height);
+
     }
 
     fn update_gallery_cursor(&mut self, area: &Rect, row_idx: usize, col_idx: usize) {
         self.gallery_cursor.area = *area;
         self.gallery_cursor.row = row_idx as u16;
         self.gallery_cursor.col = col_idx as u16;
+
+        //log::info!("y of area in update_gallery_cursor: {}", area.y);
+        //log::info!("y of gallery_cursor in update_gallery_cursor: {}", self.gallery_cursor.area.y);
     }
 
     fn draw_gallery_cursor(&self, area: &Rect, img_path: &String, buf: &mut Buffer) {

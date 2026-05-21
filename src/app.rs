@@ -132,7 +132,10 @@ impl App {
 
                 self.ui.current_selected_img_idx = self.ui.current_selected_img_idx - self.ui.num_horizontal_grid_cells;
 
-                //if
+                let num_rows_above_cursor = self.ui.gallery_cursor.area.y - self.ui.scroll_offset;
+                if num_rows_above_cursor < self.ui.gallery_cursor.area.height {
+                    self.ui.scroll_offset = self.ui.scroll_offset.saturating_sub(self.ui.grid_cell_height as u16 - num_rows_above_cursor);
+                }
             }
         }
     }

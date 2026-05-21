@@ -455,7 +455,9 @@ impl StatefulWidget for StivImageWidget {
 
         let needs_upload = !state.uploaded
             || state.last_area != Some(new_area);
+        //let needs_upload = !state.uploaded;
 
+        // this is called on every update of cursor, this is a problem
         if needs_upload {
             //log::info!("stiv_image.render: need_upload!");
             //if let Err(e) = state.upload_shm(&new_area) {
