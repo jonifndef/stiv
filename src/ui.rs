@@ -1,8 +1,10 @@
 //use chrono::Duration;
-use ratatui::{buffer::Buffer, layout::{Constraint, Direction, Layout, Rect,}, prelude::{StatefulWidget, Widget}, style::{Color, Style}, widgets::{Block, BorderType, Borders, Scrollbar, ScrollbarOrientation, ScrollbarState}};
+use ratatui::{buffer::Buffer, layout::{Constraint, Direction, Layout, Rect,}, prelude::{StatefulWidget, Widget}, style::{Color, Style}, text::Line, widgets::{Block, BorderType, Borders, Scrollbar, ScrollbarOrientation, ScrollbarState}};
+use rustix::path::Arg;
 use crate::{app, win_info::WinInfo, App};
 use crate::StivImage;
 use crate::stiv_image::StivImageWidget;
+use std::path::Path;
 //use std::iter;
 
 #[derive(Default)]
@@ -64,14 +66,14 @@ impl Ui {
                 //    std::thread::sleep(std::time::Duration::from_millis(750));
 
                 //}
-                self.draw_single_image(rect, buf, app, &win_info, img_path);
+                self.draw_single_image(rect, buf, app, &win_info, &img_path);
             },
             app::Mode::GalleryView => self.draw_gallery_view(rect, buf, app, &win_info)
         }
     }
 
-    fn draw_single_image(&self, area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: &WinInfo, img_path: String) {
-        if !app.stiv_images.contains_key(&img_path) {
+    fn draw_single_image(&self, area: &Rect, buffer: &mut Buffer, app: &mut App, win_info: &WinInfo, img_path: &String) {
+        if !app.stiv_images.contains_key(img_path) {
             if let Ok(stiv_img) = StivImage::new(img_path.clone(), &win_info) {
                 app.stiv_images.insert(img_path.clone(), stiv_img);
             } else {
@@ -84,7 +86,7 @@ impl Ui {
         //log::info!("draw_single_image: wininfo cell_width_px, cell_height_px: {}, {}", win_info.cell_width_px, win_info.cell_height_px);
         //log::info!("draw_single_image: area.width, area.height: {}, {}", area.width, area.height);
 
-        if let Some(stiv_img) = app.stiv_images.get_mut(&img_path) {
+        if let Some(stiv_img) = app.stiv_images.get_mut(img_path) {
             StivImageWidget.render(*area, buffer, stiv_img);
         }
     }
@@ -135,11 +137,11 @@ impl Ui {
                     }
                 };
 
-                self.draw_single_image(col, &mut tot_content_buf, app, win_info, img_path);
+                self.draw_single_image(col, &mut tot_content_buf, app, win_info, &img_path);
 
                 if self.current_selected_img_idx == idx {
                     self.update_gallery_cursor(col, row_idx, col_idx);
-                    self.draw_gallery_cursor(col, &mut tot_content_buf);
+                    self.draw_gallery_cursor(col, &img_path, &mut tot_content_buf);
                 }
 
                 idx += 1;
@@ -177,11 +179,17 @@ impl Ui {
         self.gallery_cursor.col = col_idx as u16;
     }
 
-    fn draw_gallery_cursor(&self, area: &Rect, buf: &mut Buffer) {
+    fn draw_gallery_cursor(&self, area: &Rect, img_path: &String, buf: &mut Buffer) {
+        let title = match Path::new(img_path).file_name() {
+            Some(filename) => &String::from(filename.to_str().unwrap()),
+            None => img_path
+        };
+
         Block::new()
             .borders(Borders::ALL)
-            .border_type(BorderType::Thick)
-            .border_style(Style::new().fg(Color::Yellow))
+            .border_type(BorderType::Rounded)
+            .border_style(Style::new().fg(Color::White))
+            .title_bottom(Line::from(title.as_str()).centered())
             .render(*area, buf);
     }
 }
