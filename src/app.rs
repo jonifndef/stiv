@@ -76,9 +76,7 @@ impl App {
                 KeyCode::Enter => {
                     self.curr_mode = if self.curr_mode == Mode::GalleryView { Mode::SingleImage } else { Mode::GalleryView };
                 }
-                KeyCode::Char('+') => {
-                    todo!();
-                }
+                KeyCode::Char('+') => self.handle_zoom_in(),
                 _ => ()
             }
        }
@@ -151,6 +149,20 @@ impl App {
                 }
 
                 self.ui.current_selected_img_idx = self.ui.current_selected_img_idx.saturating_add(1);
+            }
+        }
+    }
+
+    fn handle_zoom_in(&mut self) {
+        match self.curr_mode {
+            Mode::SingleImage => {
+                let current_img_path = &self.image_paths[self.ui.current_selected_img_idx];
+                let current_stiv_img = self.stiv_images.get_mut(current_img_path).unwrap();
+
+                current_stiv_img.zoom_state = current_stiv_img.zoom_state + 0.25;
+            },
+            Mode::GalleryView => {
+                log::info!("Zooming in in gallery view!");
             }
         }
     }

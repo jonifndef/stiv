@@ -29,7 +29,7 @@ pub struct StivImage {
     id: u32,
     pub uploaded: bool,
     pub last_area: Option<Rect>,
-    zoom_state: f32,
+    pub zoom_state: f32,
     dynamic_image: DynamicImage,
     resized_image: Option<DynamicImage>,
     shm_file: Option<ShmFile>,
@@ -72,12 +72,16 @@ impl StivImage {
 
         if new_width > self.width_px as u32 &&
             new_height > self.height_px as u32 &&
-            !self.uploaded {
+            !self.uploaded &&
+            self.zoom_state == 1.0 {
             //log::info!("resize_to_fit: returning original area for {}", self.path);
             return Rect::new(area.x, area.y, area.width, area.height)
         }
 
         (new_width, new_height) = self.adjust_for_aspect_ratio(new_width, new_height);
+
+        let new_img_width  = (new_width  as f32 * self.zoom_state) as u32;
+        let new_img_height = (new_height as f32 * self.zoom_state) as u32;
 
         let src_rgb = self.dynamic_image.to_rgb8();
 
@@ -88,7 +92,7 @@ impl StivImage {
             fir::PixelType::U8x3,
         ).unwrap();
 
-        let mut dst = FirImage::new(new_width, new_height, fir::PixelType::U8x3);
+        let mut dst = FirImage::new(new_img_width, new_img_height, fir::PixelType::U8x3);
 
         let mut resizer = fir::Resizer::new();
 
@@ -100,8 +104,8 @@ impl StivImage {
         ).unwrap();
 
         let rgb_image = image::RgbImage::from_raw(
-            new_width,
-            new_height,
+            new_img_width,
+            new_img_height,
             dst.into_vec(),
         ).unwrap();
 
@@ -135,10 +139,7 @@ impl StivImage {
         let chunks: Vec<&[u8]> = encoded.as_bytes().chunks(4096).collect();
         let last_idx = chunks.len().saturating_sub(1);
 
-        let id   = self.id;
-        //let cols = area.width;
-        //let rows = area.height;
-
+        let id = self.id;
         let mut stdout = io::stdout();
 
         for (i, chunk) in chunks.iter().enumerate() {
@@ -149,7 +150,15 @@ impl StivImage {
             let control = if is_first {
                 // All metadata on the first chunk only
                 //format!("a=T,f=24,t=d,U=1,i={id},c={cols},r={rows},s={width},v={height},q=2,m={m}")
-                format!("a=T,f=24,t=d,C=1,U=1,i={id},s={width},v={height},q=2,m={m}")
+                // This is ugly af, but it's just try
+                // Eventually, we want the image to scale such that if the terminal allows is to
+                // grow vertically, even if the aspect ratio has limited it in the horizontal axis,
+                // and vice versa
+                if self.zoom_state != 1.0 {
+                    format!("a=T,f=24,t=d,C=1,U=1,i={},s={},v={},x={},y={},w={},h={},q=2,m={}", id, width, height, area.x, area.y, area.width, area.height, m)
+                } else {
+                    format!("a=T,f=24,t=d,C=1,U=1,i={id},s={width},v={height},q=2,m={m}")
+                }
             } else {
                 format!("m={m},i={id},q=2")
             };

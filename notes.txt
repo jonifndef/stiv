@@ -1,7 +1,5 @@
 fix zoom and pan
 fix borders with image names (both in gallery mode and single image mode)
-fix gallery navigation with cursor, goto SingleImage mode
-fix image ids
 fix optimization, minimal copying and re-creation of objects, reasonable lifetimes (for objects, not specifically "rust lifetimes")
 fix gallery zooming
 fix rgba instead of rgb
@@ -16,3 +14,17 @@ fix imports, they look like crap now
 fix a nice README.md with some checkboxes and some cool logo
 fix auto-update on file change
 fix image deletions on exit
+
+Priority:
+
+1. Profile what is so slow when scrolling in gallery mode, it shouldn't need to upload any new images, and just scrolling the unicode characters shouldn't be heavy what so ever, at least not for the stiv app
+
+2. Make images two rows/columns smaller in gallery mode, so they are not cropped when the cursor is on them
+
+3. Make images centered in gallery mode
+
+4. Fix zooming in and out
+
+5. Fix next/prev in single image move, which updates the cursor
+
+6. Fix transfer mode temporary file, rather than direct (stream) or shm
