@@ -60,7 +60,7 @@ impl Ui {
 
         match app.curr_mode {
             app::Mode::SingleImage => {
-                let img_path = app.image_paths[app.ui.current_selected_img_idx].clone();
+                let img_path = app.image_paths[self.current_selected_img_idx].clone();
                 //if let Some(img) = app.stiv_images.get_mut(&img_path) {
                 //    img.delete_from_terminal();
                 //    std::thread::sleep(std::time::Duration::from_millis(750));
