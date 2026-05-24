@@ -21,8 +21,8 @@ pub struct StivImage {
     width_px: u16,
     height_px: u16,
     size_cols: u16,
-    cell_width_px: u16,
-    cell_height_px: u16,
+    pub cell_width_px: u16,
+    pub cell_height_px: u16,
     size_rows: u16,
     pos_col: u16,
     pos_row: u16,
@@ -80,6 +80,13 @@ impl StivImage {
 
         (new_width, new_height) = self.adjust_for_aspect_ratio(new_width, new_height);
 
+        // offset to center image in area
+        let new_width_in_cols = new_width as u16 / self.cell_width_px;
+        let new_height_in_rows = new_height as u16 / self.cell_height_px;
+
+        let width_offset_in_cols = area.width.saturating_sub(new_width_in_cols);
+        let height_offset_in_rows = area.height.saturating_sub(new_height_in_rows);
+
         let new_img_width  = (new_width  as f32 * self.zoom_state) as u32;
         let new_img_height = (new_height as f32 * self.zoom_state) as u32;
 
@@ -100,7 +107,8 @@ impl StivImage {
             &src,
             &mut dst,
             &fir::ResizeOptions::new()
-                .resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Lanczos3)),
+                //.resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Lanczos3)),
+                .resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Box)),
         ).unwrap();
 
         let rgb_image = image::RgbImage::from_raw(
@@ -112,7 +120,7 @@ impl StivImage {
         self.resized_image = Some(DynamicImage::ImageRgb8(rgb_image));
         self.uploaded = false;
 
-        return Rect::new(area.x, area.y, new_width as u16 / self.cell_width_px, new_height as u16 / self.cell_height_px);
+        return Rect::new(area.x + (width_offset_in_cols / 2), area.y + (height_offset_in_rows / 2), new_width_in_cols, new_height_in_rows);
     }
 
     pub fn move_cursor(&mut self, area: &Rect) -> anyhow::Result<()> {
@@ -281,49 +289,6 @@ impl StivImage {
             }
         }
     }
-
-    //pub fn render_placeholders(&self, area: Rect, buf: &mut Buffer) {
-    //    let area = area.intersection(*buf.area());
-    //    let id = self.id;
-    //    let [id_extra, id_r, id_g, id_b] = id.to_be_bytes();
-    //    let id_color = format!("\x1b[38;2;{id_r};{id_g};{id_b}m");
-    //    let right = area.width.saturating_sub(1);
-    //    let down  = area.height.saturating_sub(1);
-
-    //    for y in 0..area.height {
-    //        // Build entire row as one string
-    //        let mut symbol = String::new();
-
-    //        // Save cursor, set colour, write first placeholder with explicit row/col
-    //        write!(
-    //            symbol,
-    //            "\x1b[s{id_color}\u{10EEEE}{}{}{}",
-    //            kitty_diacritics::diacritic_for_index(y as u32),  // row
-    //            kitty_diacritics::diacritic_for_index(0),          // col 0
-    //            kitty_diacritics::diacritic_for_index(id_extra as u32), // id high byte
-    //        ).unwrap();
-
-    //        // Rest of row — bare placeholder chars, column inferred
-    //        symbol.extend(std::iter::repeat_n('\u{10EEEE}', (area.width as usize).saturating_sub(1)));
-
-    //        // Restore cursor then move to bottom-right of image area
-    //        // so ratatui's cursor tracking ends up in the right place
-    //        write!(symbol, "\x1b[u\x1b[{right}C\x1b[{down}B").unwrap();
-
-    //        // Write entire row into first cell of this row
-    //        if let Some(cell) = buf.cell_mut((area.x, area.y + y)) {
-    //            cell.set_symbol(&symbol);
-    //            cell.set_skip(false);
-    //        }
-
-    //        // Skip all other cells in this row
-    //        for col in 1..area.width {
-    //            if let Some(cell) = buf.cell_mut((area.x + col, area.y + y)) {
-    //                cell.set_skip(true);
-    //            }
-    //        }
-    //    }
-    //}
 
     pub fn render_direct_transmission(&mut self) -> anyhow::Result<()> {
         let img = self.resized_image.clone().unwrap_or_else(|| self.dynamic_image.clone());

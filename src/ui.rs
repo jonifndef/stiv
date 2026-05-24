@@ -87,6 +87,10 @@ impl Ui {
         //log::info!("draw_single_image: area.width, area.height: {}, {}", area.width, area.height);
 
         if let Some(stiv_img) = app.stiv_images.get_mut(img_path) {
+            // Make sure this info is updated, otherwise we have old info form when the stiv_img
+            // was created above
+            stiv_img.cell_width_px = win_info.cell_width_px;
+            stiv_img.cell_height_px = win_info.cell_height_px;
             StivImageWidget.render(*area, buffer, stiv_img);
         }
     }

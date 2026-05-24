@@ -19,12 +19,10 @@ Priority:
 
 1. Profile what is so slow when scrolling in gallery mode, it shouldn't need to upload any new images, and just scrolling the unicode characters shouldn't be heavy what so ever, at least not for the stiv app
 
-2. Make images two rows/columns smaller in gallery mode, so they are not cropped when the cursor is on them
+2. Make images centered in gallery mode
 
-3. Make images centered in gallery mode
+3. Fix zooming in and out
 
-4. Fix zooming in and out
+4. Fix next/prev in single image move, which updates the cursor
 
-5. Fix next/prev in single image move, which updates the cursor
-
-6. Fix transfer mode temporary file, rather than direct (stream) or shm
+5. Fix transfer mode temporary file, rather than direct (stream) or shm
