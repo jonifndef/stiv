@@ -118,6 +118,8 @@ impl Ui {
         let chunk_rows = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vertical_constraints)
+            .spacing(1)
+            .margin(1)
             .split(content_area);
 
         let mut idx = 0;
@@ -125,6 +127,7 @@ impl Ui {
             let cols = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(horizontal_constraints.clone())
+            .spacing(1)
             .split(*row);
 
             for (col_idx, col) in cols.into_iter().enumerate() {
@@ -143,7 +146,7 @@ impl Ui {
                 // scroll buffer is moved, it lags behind, so to speak
                 if self.current_selected_img_idx == idx {
                     self.update_gallery_cursor(col, row_idx, col_idx);
-                    self.draw_gallery_cursor(col, &img_path, &mut tot_content_buf);
+                    self.draw_gallery_cursor(&img_path, &mut tot_content_buf);
                 }
 
                 idx += 1;
@@ -177,7 +180,10 @@ impl Ui {
     }
 
     fn update_gallery_cursor(&mut self, area: &Rect, row_idx: usize, col_idx: usize) {
-        self.gallery_cursor.area = *area;
+        self.gallery_cursor.area.x = area.x - 1;
+        self.gallery_cursor.area.y = area.y - 1;
+        self.gallery_cursor.area.width = area.width + 2;
+        self.gallery_cursor.area.height = area.height + 2;
         self.gallery_cursor.row = row_idx as u16;
         self.gallery_cursor.col = col_idx as u16;
 
@@ -185,7 +191,7 @@ impl Ui {
         //log::info!("y of gallery_cursor in update_gallery_cursor: {}", self.gallery_cursor.area.y);
     }
 
-    fn draw_gallery_cursor(&self, area: &Rect, img_path: &String, buf: &mut Buffer) {
+    fn draw_gallery_cursor(&self, img_path: &String, buf: &mut Buffer) {
         let title = match Path::new(img_path).file_name() {
             Some(filename) => &String::from(filename.to_str().unwrap()),
             None => img_path
@@ -196,6 +202,6 @@ impl Ui {
             .border_type(BorderType::Rounded)
             .border_style(Style::new().fg(Color::White))
             .title_bottom(Line::from(title.as_str()).centered())
-            .render(*area, buf);
+            .render(self.gallery_cursor.area, buf);
     }
 }
