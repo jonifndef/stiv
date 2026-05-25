@@ -11,6 +11,7 @@ mod shm;
 mod utils;
 mod logging;
 mod kitty_diacritics;
+mod stiv_event;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

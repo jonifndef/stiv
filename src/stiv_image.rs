@@ -1,6 +1,5 @@
 use imagesize::{size};
 use ratatui::{widgets::StatefulWidget, layout::Rect, buffer::Buffer};
-use crate::{shm::ShmFile, win_info::WinInfo, kitty_diacritics};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use std::{fmt::Write, io::{self, Write as stdoutWrite}, thread, time::Duration};
 use image::{DynamicImage};
@@ -9,6 +8,7 @@ use fast_image_resize::images::Image as FirImage;
 use std::sync::atomic::{AtomicU32, Ordering};
 use ratatui::style::Color;
 use itertools::{Itertools, Position};
+use crate::{kitty_diacritics, shm::ShmFile, stiv_event::StivEvent, win_info::WinInfo};
 
 static NEXT_KITTY_ID: AtomicU32 = AtomicU32::new(1);
 

@@ -81,11 +81,6 @@ impl Ui {
             }
         }
 
-        //log::info!("For image: {}", img_path);
-        //log::info!("draw_single_image: wininfo cols, rows: {}, {}", win_info.cols, win_info.rows);
-        //log::info!("draw_single_image: wininfo cell_width_px, cell_height_px: {}, {}", win_info.cell_width_px, win_info.cell_height_px);
-        //log::info!("draw_single_image: area.width, area.height: {}, {}", area.width, area.height);
-
         if let Some(stiv_img) = app.stiv_images.get_mut(img_path) {
             // Make sure this info is updated, otherwise we have old info form when the stiv_img
             // was created above

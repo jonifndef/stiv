@@ -1,9 +1,9 @@
-use crossterm::event::{self, KeyCode};
+use crossterm::event::{self, Event, KeyCode};
 use ratatui::{widgets::StatefulWidget, buffer::Buffer, prelude::Rect};
 use std::{fs, io, path::{self, Path, PathBuf}};
 use std::env;
 use std::collections::HashMap;
-use crate::{stiv_image::StivImage, ui};
+use crate::{stiv_event::StivEvent, stiv_image::StivImage, ui};
 
 pub struct App {
     exit: bool,
@@ -11,6 +11,7 @@ pub struct App {
     pub image_paths: Vec<String>,
     pub stiv_images: HashMap<String, StivImage>,
     pub ui: ui::Ui,
+    pub current_event: StivEvent,
 }
 
 pub struct AppWidget;
@@ -49,6 +50,7 @@ impl App {
             image_paths: image_paths,
             stiv_images: HashMap::new(),
             ui: ui::Ui::new(),
+            current_event: StivEvent::None,
         })
     }
 
@@ -66,8 +68,8 @@ impl App {
     }
 
     fn handle_events(&mut self) -> anyhow::Result<()> {
-        if let Some(key) = event::read()?.as_key_press_event() {
-            match key.code {
+        match event::read()? {
+            Event::Key(key) => match key.code {
                 KeyCode::Char('q') => self.exit = true,
                 KeyCode::Char('h') => self.handle_navigate_left(),
                 KeyCode::Char('j') => self.handle_navigate_down(),
@@ -75,13 +77,15 @@ impl App {
                 KeyCode::Char('l') => self.handle_navigate_right(),
                 KeyCode::Char('n') => self.handle_next(),
                 KeyCode::Char('p') => self.handle_previous(),
-                KeyCode::Enter => {
-                    self.curr_mode = if self.curr_mode == Mode::GalleryView { Mode::SingleImage } else { Mode::GalleryView };
-                }
                 KeyCode::Char('+') => self.handle_zoom_in(),
-                _ => ()
-            }
-       }
+                KeyCode::Enter => self.handle_toggle_mode(),
+                _ => {}
+            },
+            Event::Resize(cols, rows) => {
+                self.handle_resize(cols, rows);
+            },
+            _ => {}
+        }
 
         Ok(())
     }
@@ -187,6 +191,14 @@ impl App {
                 log::info!("Zooming in in gallery view!");
             }
         }
+    }
+
+    fn handle_toggle_mode(&mut self) {
+        self.curr_mode = if self.curr_mode == Mode::GalleryView { Mode::SingleImage } else { Mode::GalleryView };
+    }
+
+    fn handle_resize(&mut self, _cols: u16, _rows: u16) {
+        self.current_event = StivEvent::TermResize;
     }
 }
 
