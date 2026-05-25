@@ -73,6 +73,8 @@ impl App {
                 KeyCode::Char('j') => self.handle_navigate_down(),
                 KeyCode::Char('k') => self.handle_navigate_up(),
                 KeyCode::Char('l') => self.handle_navigate_right(),
+                KeyCode::Char('n') => self.handle_next(),
+                KeyCode::Char('p') => self.handle_previous(),
                 KeyCode::Enter => {
                     self.curr_mode = if self.curr_mode == Mode::GalleryView { Mode::SingleImage } else { Mode::GalleryView };
                 }
@@ -150,6 +152,26 @@ impl App {
 
                 self.ui.current_selected_img_idx = self.ui.current_selected_img_idx.saturating_add(1);
             }
+        }
+    }
+
+    fn handle_next(&mut self) {
+        match self.curr_mode {
+            Mode::SingleImage => {
+                if self.ui.current_selected_img_idx < self.image_paths.len() {
+                    self.ui.current_selected_img_idx = self.ui.current_selected_img_idx.saturating_add(1)
+                }
+            },
+            _ => ()
+        }
+    }
+
+    fn handle_previous(&mut self) {
+        match self.curr_mode {
+            Mode::SingleImage => {
+                self.ui.current_selected_img_idx = self.ui.current_selected_img_idx.saturating_sub(1)
+            },
+            _ => ()
         }
     }
 
