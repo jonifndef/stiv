@@ -22,3 +22,13 @@ Priority:
 2. Fix zooming in and out
 
 3. Fix transfer mode temporary file, rather than direct (stream) or shm
+
+2026-05-26 12:48:27 [INFO] new area width: 30, height: 11
+2026-05-26 12:48:27 [INFO] state.uploaded = true, area_size_changed = true for img assets/wide_wallpaper.jpg
+2026-05-26 12:48:27 [INFO] Setting last area width, height to 30, 1
+2026-05-26 12:48:27 [INFO] new area width: 30, height: 10
+2026-05-26 12:48:27 [INFO] state.uploaded = true, area_size_changed = true for img assets/rust.png
+2026-05-26 12:48:27 [INFO] Setting last area width, height to 30, 8
+2026-05-26 12:48:27 [INFO] new area width: 30, height: 11
+2026-05-26 12:48:27 [INFO] state.uploaded = true, area_size_changed = true for img assets/code.jpg
+2026-05-26 12:48:27 [INFO] Setting last area width, height to 30, 8

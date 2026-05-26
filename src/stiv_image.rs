@@ -178,7 +178,10 @@ impl StivImage {
 
         stdout.flush()?;
         self.uploaded = true;
-        self.last_area = Some(*area);
+        //self.last_area = Some(*area);
+
+        log::info!("Setting last area width, height to {}, {}", area.width, area.height);
+
         Ok(())
     }
 
@@ -401,6 +404,13 @@ impl StatefulWidget for StivImageWidget {
         // if event is toggle_mode, we need to resize it (of even save one instance of each size?
         let mut new_area = area.clone();
 
+        // resized area is always different from this, because of aspect ratio. We might need two
+        // separate areas saved in the stiv_img instance. One for this area, one for the
+        // aspect-ratio-adjusted one
+        log::info!("new area width: {}, height: {}", area.width, area.height);
+
+        // Maybe call adjust_for_aspect_ratio before this, separately, and compare against
+        // last_adjusted_area!
         let area_size_changed = match state.last_area {
             Some(last_area) => {
                 (area.width, area.height) != (last_area.width, last_area.height)
@@ -428,5 +438,6 @@ impl StatefulWidget for StivImageWidget {
         }
 
         state.render_placeholders(new_area, buf);
+        state.last_area = Some(area);
     }
 }
