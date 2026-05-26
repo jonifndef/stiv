@@ -63,18 +63,14 @@ impl StivImage {
     }
 
     pub fn resize_to_fit(&mut self, area: &Rect) -> Rect {
-        //log::info!("resize_to_fit called!");
         let mut new_width = (area.width * self.cell_width_px) as u32;
         let mut new_height = (area.height * self.cell_height_px) as u32;
-        //log::info!("new_width: {}", new_width);
-        //log::info!("new_height: {}", new_height);
-        //log::info!("area.width, area.height: {}, {}", area.width, area.height);
 
         if new_width > self.width_px as u32 &&
             new_height > self.height_px as u32 &&
             !self.uploaded &&
             self.zoom_state == 1.0 {
-            //log::info!("resize_to_fit: returning original area for {}", self.path);
+
             return Rect::new(area.x, area.y, area.width, area.height)
         }
 
@@ -192,7 +188,6 @@ impl StivImage {
         let width = img_rgb.width();
         let height = img_rgb.height();
         let img_rgb_raw = img_rgb.into_raw();
-        //log::info!("in upload_shm: width, height: {}, {}", width, height);
 
         // ===========================//
         // Make this more obvious, somwthing like "if shm_available()"
@@ -223,7 +218,6 @@ impl StivImage {
             let mut stdout = io::stdout();
             stdout.write_all(cmd.as_bytes())?;
             stdout.flush()?;
-            //std::thread::sleep(std::time::Duration::from_millis(750));
 
             self.uploaded = true;
             self.last_area = Some(*area);
@@ -363,32 +357,8 @@ impl StivImage {
             }
         }
 
-        //let cmd = format!(
-        //    "\x1b_Ga=T,f=24,t=s,s={width},v={height},q=2;{path_b64}\x1b\\",
-        //);
-
-        //let mut stdout = io::stdout();
-        //stdout.write_all(cmd.as_bytes())?;
-        //stdout.flush()?;
-
         Ok(())
     }
-
-    //fn draw_using_shm(&self, stdout: &io::Stdout, img: &Container) -> anyhow::Result<()> {
-    //    if let Some(shm_file) = self.shm_file {
-    //        shm_file.resize_if_needed(img_rgb_raw.len())?;
-    //        shm_file.write_to_shm_file(&img_rgb_raw)?;
-    //    } else {
-    //        return anyhow::Err;
-    //    }
-
-    //    Ok(())
-    //}
-
-    //fn draw_using_byte_stream(&self, stdout: &io::Stdout) -> anyhow::Result<()> {
-
-    //    Ok(())
-    //}
 
     fn adjust_for_aspect_ratio(&self, new_width: u32, new_height: u32) -> (u32, u32) {
         let ratio = self.dynamic_image.width() as f32 / self.dynamic_image.height() as f32;

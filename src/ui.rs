@@ -47,8 +47,6 @@ impl Ui {
         }
     }
 
-    // Set grid size based on terminal window cols,rows
-    // 30x12 cells is a pretty good size to start with, per grid cell
     pub fn ui_draw(&mut self, rect: &Rect, buf: &mut Buffer, app: &mut App) {
         let win_info = match WinInfo::get_win_info() {
             Ok(win_info) => win_info,
@@ -61,11 +59,6 @@ impl Ui {
         match app.curr_mode {
             app::Mode::SingleImage => {
                 let img_path = app.image_paths[self.current_selected_img_idx].clone();
-                //if let Some(img) = app.stiv_images.get_mut(&img_path) {
-                //    img.delete_from_terminal();
-                //    std::thread::sleep(std::time::Duration::from_millis(750));
-
-                //}
                 self.draw_single_image(rect, buf, app, &win_info, &img_path);
             },
             app::Mode::GalleryView => self.draw_gallery_view(rect, buf, app, &win_info)
@@ -141,8 +134,6 @@ impl Ui {
 
                 self.draw_single_image(col, &mut tot_content_buf, app, win_info, &img_path);
 
-                // the problem is that the y value of the cursor rect is not updated when the
-                // scroll buffer is moved, it lags behind, so to speak
                 if self.current_selected_img_idx == idx {
                     self.update_gallery_cursor(col, row_idx, col_idx);
                     self.draw_gallery_cursor(&img_path, &mut tot_content_buf);
@@ -173,9 +164,6 @@ impl Ui {
 
         let current_selected_row = self.current_selected_img_idx / self.num_horizontal_grid_cells + 1;
         self.visible_rows_under_selected_image = area.height.saturating_sub(current_selected_row as u16 * self.grid_cell_height as u16);
-        //log::info!("visible_rows_under_selected_image: {}", self.visible_rows_under_selected_image);
-        //log::info!("area height: {}", area.height);
-
     }
 
     fn update_gallery_cursor(&mut self, area: &Rect, row_idx: usize, col_idx: usize) {
@@ -185,9 +173,6 @@ impl Ui {
         self.gallery_cursor.area.height = area.height + 2;
         self.gallery_cursor.row = row_idx as u16;
         self.gallery_cursor.col = col_idx as u16;
-
-        //log::info!("y of area in update_gallery_cursor: {}", area.y);
-        //log::info!("y of gallery_cursor in update_gallery_cursor: {}", self.gallery_cursor.area.y);
     }
 
     fn draw_gallery_cursor(&self, img_path: &String, buf: &mut Buffer) {
