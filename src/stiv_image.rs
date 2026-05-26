@@ -417,27 +417,30 @@ impl StivImage {
     }
 }
 
-pub struct StivImageWidget;
+pub struct StivImageWidget {
+    pub current_event: StivEvent,
+}
 
 impl StatefulWidget for StivImageWidget {
     type State = StivImage;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut StivImage) {
+        // so, what do we need to do?
+        // if image is not uploaded, we prolly need to resize it (for the first time)
+        // if event is resize in single image mode, we need to resize it
+        // if event is toggle_mode, we need to resize it (of even save one instance of each size?
         let new_area = state.resize_to_fit(&area);
 
-        //log::info!("stiv_image.render: new_area width, height: {},{}", new_area.width, new_area.height);
+        // if event is zoom, we do a separate, other rescale
 
+        // we only need to upload if:
+        // a) it hasn't been uploaded for the first time
+        // b) we have done a source image resize
         let needs_upload = !state.uploaded
             || state.last_area != Some(new_area);
-        //let needs_upload = !state.uploaded;
 
         // this is called on every update of cursor, this is a problem
         if needs_upload {
-            //log::info!("stiv_image.render: need_upload!");
-            //if let Err(e) = state.upload_shm(&new_area) {
-            //    log::error!("upload error: {e}");
-            //    return;
-            //}
             if let Err(e) = state.upload_stream(&new_area) {
                 log::error!("upload error: {e}");
                 return;
@@ -445,6 +448,5 @@ impl StatefulWidget for StivImageWidget {
         }
 
         state.render_placeholders(new_area, buf);
-        //state.render_placeholders_without_ratatui_buf(new_area);
     }
 }

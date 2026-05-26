@@ -86,7 +86,7 @@ impl Ui {
             // was created above
             stiv_img.cell_width_px = win_info.cell_width_px;
             stiv_img.cell_height_px = win_info.cell_height_px;
-            StivImageWidget.render(*area, buffer, stiv_img);
+            StivImageWidget { current_event: app.current_event }.render(*area, buffer, stiv_img);
         }
     }
 
