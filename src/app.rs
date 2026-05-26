@@ -7,7 +7,7 @@ use crate::{stiv_event::StivEvent, stiv_image::StivImage, ui};
 
 pub struct App {
     exit: bool,
-    pub curr_mode: Mode,
+    pub current_mode: Mode,
     pub image_paths: Vec<String>,
     pub stiv_images: HashMap<String, StivImage>,
     pub ui: ui::Ui,
@@ -43,7 +43,7 @@ impl App {
 
         Ok(App {
             exit: false,
-            curr_mode: match &image_paths.len() {
+            current_mode: match &image_paths.len() {
                 1 => Mode::SingleImage,
                 _ => Mode::GalleryView
             },
@@ -91,7 +91,7 @@ impl App {
     }
 
     fn handle_navigate_left(&mut self) {
-        match self.curr_mode {
+        match self.current_mode {
             Mode::SingleImage => {
                 log::info!("Panning left in SingleImage mode");
             },
@@ -106,7 +106,7 @@ impl App {
     }
 
     fn handle_navigate_down(&mut self) {
-        match self.curr_mode {
+        match self.current_mode {
             Mode::SingleImage => {
                 log::info!("Panning down in SingleImage mode");
             },
@@ -125,7 +125,7 @@ impl App {
     }
 
     fn handle_navigate_up(&mut self) {
-        match self.curr_mode {
+        match self.current_mode {
             Mode::SingleImage => {
                 log::info!("Panning up in SingleImage mode");
             },
@@ -145,7 +145,7 @@ impl App {
     }
 
     fn handle_navigate_right(&mut self) {
-        match self.curr_mode {
+        match self.current_mode {
             Mode::SingleImage => {
                 log::info!("Panning right in SingleImage mode");
             },
@@ -160,7 +160,7 @@ impl App {
     }
 
     fn handle_next(&mut self) {
-        match self.curr_mode {
+        match self.current_mode {
             Mode::SingleImage => {
                 if self.ui.current_selected_img_idx < self.image_paths.len() {
                     self.ui.current_selected_img_idx = self.ui.current_selected_img_idx.saturating_add(1)
@@ -171,7 +171,7 @@ impl App {
     }
 
     fn handle_previous(&mut self) {
-        match self.curr_mode {
+        match self.current_mode {
             Mode::SingleImage => {
                 self.ui.current_selected_img_idx = self.ui.current_selected_img_idx.saturating_sub(1)
             },
@@ -180,12 +180,19 @@ impl App {
     }
 
     fn handle_zoom_in(&mut self) {
-        match self.curr_mode {
+        // It is better to set a field in the StivImageWidget struct that gets created per-frame.
+        // This information does not need to be
+        // a) global, it only affects a single stiv_image most of the time, and
+        // b) persistent, even as it is now, the event state is persistent in App, but it needn't
+        // be, it's per-frame data
+        // This probably goes for all StivEvent:s
+        match self.current_mode {
             Mode::SingleImage => {
                 let current_img_path = &self.image_paths[self.ui.current_selected_img_idx];
                 let current_stiv_img = self.stiv_images.get_mut(current_img_path).unwrap();
 
                 current_stiv_img.zoom_state = current_stiv_img.zoom_state + 0.25;
+                self.current_event = StivEvent::ZoomIn;
             },
             Mode::GalleryView => {
                 log::info!("Zooming in in gallery view!");
@@ -194,7 +201,8 @@ impl App {
     }
 
     fn handle_toggle_mode(&mut self) {
-        self.curr_mode = if self.curr_mode == Mode::GalleryView { Mode::SingleImage } else { Mode::GalleryView };
+        self.current_mode = if self.current_mode == Mode::GalleryView { Mode::SingleImage } else { Mode::GalleryView };
+        self.current_event = StivEvent::ToggleMode;
     }
 
     fn handle_resize(&mut self, _cols: u16, _rows: u16) {

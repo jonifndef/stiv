@@ -399,18 +399,28 @@ impl StatefulWidget for StivImageWidget {
         // if image is not uploaded, we prolly need to resize it (for the first time)
         // if event is resize in single image mode, we need to resize it
         // if event is toggle_mode, we need to resize it (of even save one instance of each size?
-        let new_area = state.resize_to_fit(&area);
+        let mut new_area = area.clone();
+
+        let area_size_changed = match state.last_area {
+            Some(last_area) => {
+                (area.width, area.height) != (last_area.width, last_area.height)
+            },
+            None => false
+        };
+
+        // area_size_changed is always true!???
+        log::info!("state.uploaded = {}, area_size_changed = {} for img {}", state.uploaded, area_size_changed, state.path);
+
+        if !state.uploaded || area_size_changed {
+            new_area = state.resize_to_fit(&area);
+        }
 
         // if event is zoom, we do a separate, other rescale
 
         // we only need to upload if:
         // a) it hasn't been uploaded for the first time
         // b) we have done a source image resize
-        let needs_upload = !state.uploaded
-            || state.last_area != Some(new_area);
-
-        // this is called on every update of cursor, this is a problem
-        if needs_upload {
+        if !state.uploaded {
             if let Err(e) = state.upload_stream(&new_area) {
                 log::error!("upload error: {e}");
                 return;

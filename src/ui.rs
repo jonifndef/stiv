@@ -56,7 +56,7 @@ impl Ui {
             }
         };
 
-        match app.curr_mode {
+        match app.current_mode {
             app::Mode::SingleImage => {
                 let img_path = app.image_paths[self.current_selected_img_idx].clone();
                 self.draw_single_image(rect, buf, app, &win_info, &img_path);

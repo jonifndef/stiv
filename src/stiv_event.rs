@@ -4,7 +4,6 @@ pub enum StivEvent {
     TermResize,
     ZoomIn,
     ZoomOut,
-    SingleImageMode,
-    GalleryMode,
+    ToggleMode,
     // pan events, etc etc
 }
