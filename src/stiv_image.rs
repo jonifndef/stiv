@@ -30,8 +30,8 @@ pub struct StivImage {
     pub uploaded: bool,
     pub last_area: Option<Rect>,
     pub zoom_state: f32,
-    dynamic_image: DynamicImage,
-    resized_image: Option<DynamicImage>,
+    original_image: DynamicImage,
+    displayed_image: DynamicImage,
     shm_file: Option<ShmFile>,
 }
 
@@ -56,37 +56,27 @@ impl StivImage {
             uploaded: false,
             last_area: None,
             zoom_state: 1.0,
-            dynamic_image: img,
-            resized_image: None,
+            original_image: img.clone(),
+            displayed_image: img,
             shm_file: shm_file,
         })
     }
 
-    pub fn resize_to_fit(&mut self, area: &Rect) -> Rect {
-        let mut new_width = (area.width * self.cell_width_px) as u32;
-        let mut new_height = (area.height * self.cell_height_px) as u32;
+    pub fn resize_to_fit(&mut self, area: &Rect) {
+        let new_width = (area.width * self.cell_width_px) as u32;
+        let new_height = (area.height * self.cell_height_px) as u32;
 
         if new_width > self.width_px as u32 &&
             new_height > self.height_px as u32 &&
             !self.uploaded &&
             self.zoom_state == 1.0 {
-
-            return Rect::new(area.x, area.y, area.width, area.height)
+            return
         }
-
-        (new_width, new_height) = self.adjust_for_aspect_ratio(new_width, new_height);
-
-        // offset to center image in area
-        let new_width_in_cols = new_width as u16 / self.cell_width_px;
-        let new_height_in_rows = new_height as u16 / self.cell_height_px;
-
-        let width_offset_in_cols = area.width.saturating_sub(new_width_in_cols);
-        let height_offset_in_rows = area.height.saturating_sub(new_height_in_rows);
 
         let new_img_width  = (new_width  as f32 * self.zoom_state) as u32;
         let new_img_height = (new_height as f32 * self.zoom_state) as u32;
 
-        let src_rgb = self.dynamic_image.to_rgb8();
+        let src_rgb = self.original_image.to_rgb8();
 
         let src = fir::images::ImageRef::new(
             src_rgb.width(),
@@ -113,10 +103,11 @@ impl StivImage {
             dst.into_vec(),
         ).unwrap();
 
-        self.resized_image = Some(DynamicImage::ImageRgb8(rgb_image));
+        self.displayed_image = DynamicImage::ImageRgb8(rgb_image);
         self.uploaded = false;
 
-        return Rect::new(area.x + (width_offset_in_cols / 2), area.y + (height_offset_in_rows / 2), new_width_in_cols, new_height_in_rows);
+        ()
+        //return Rect::new(area.x + (width_offset_in_cols / 2), area.y + (height_offset_in_rows / 2), new_width_in_cols, new_height_in_rows);
     }
 
     pub fn move_cursor(&mut self, area: &Rect) -> anyhow::Result<()> {
@@ -132,8 +123,7 @@ impl StivImage {
     }
 
     pub fn upload_stream(&mut self, area: &Rect) -> anyhow::Result<()> {
-        let img = self.resized_image.as_ref()
-            .unwrap_or(&self.dynamic_image);
+        let img = self.displayed_image.clone();
         let img_rgb = img.to_rgb8();
         let width  = img_rgb.width();
         let height = img_rgb.height();
@@ -180,13 +170,11 @@ impl StivImage {
         self.uploaded = true;
         //self.last_area = Some(*area);
 
-        log::info!("Setting last area width, height to {}, {}", area.width, area.height);
-
         Ok(())
     }
 
     pub fn upload_shm(&mut self, area: &Rect) -> anyhow::Result<()> {
-        let img = self.resized_image.clone().unwrap_or_else(|| self.dynamic_image.clone());
+        let img = self.displayed_image.clone();
         let img_rgb = img.into_rgb8();
         let width = img_rgb.width();
         let height = img_rgb.height();
@@ -288,7 +276,7 @@ impl StivImage {
     }
 
     pub fn render_direct_transmission(&mut self) -> anyhow::Result<()> {
-        let img = self.resized_image.clone().unwrap_or_else(|| self.dynamic_image.clone());
+        let img = self.displayed_image.clone();
         let img_rgb = img.into_rgb8();
         let width = img_rgb.width();
         let height = img_rgb.height();
@@ -325,7 +313,7 @@ impl StivImage {
     }
 
     pub fn draw(&mut self, area: &Rect, buf: &mut Buffer) -> anyhow::Result<()> {
-        let img = self.resized_image.clone().unwrap_or_else(|| self.dynamic_image.clone());
+        let img = self.displayed_image.clone();
         let img_rgb = img.into_rgb8();
         let width = img_rgb.width();
         let height = img_rgb.height();
@@ -364,7 +352,7 @@ impl StivImage {
     }
 
     fn adjust_for_aspect_ratio(&self, new_width: u32, new_height: u32) -> (u32, u32) {
-        let ratio = self.dynamic_image.width() as f32 / self.dynamic_image.height() as f32;
+        let ratio = self.original_image.width() as f32 / self.original_image.height() as f32;
         let test_width = new_height as f32 * ratio;
 
         if test_width > new_width as f32 {
@@ -376,6 +364,32 @@ impl StivImage {
 
         // round the result?
         return (test_width as u32, new_height);
+    }
+
+    fn get_area_adjusted_for_aspect_ratio(&self, area: &Rect) -> Rect {
+        let mut adjusted_area = area.clone();
+        let ratio = self.original_image.width() as f32 / self.original_image.height() as f32;
+        let test_width = area.width as f32 * ratio;
+
+        if test_width > area.width as f32 {
+            let height = (area.width as f32 / ratio).ceil();
+
+            adjusted_area.height = height as u16;
+        } else {
+            adjusted_area.width = test_width as u16;
+        }
+        // this is 4 in rows, but it should be 1
+        log::info!("adjusted_area height after adjust: {} in rows", adjusted_area.height);
+        // this is 84 in px, but it should be 32
+        log::info!("adjusted_area height after adjust: {} in px", adjusted_area.height * self.cell_height_px);
+
+        let width_offset_in_cols = area.width.saturating_sub(adjusted_area.width);
+        let height_offset_in_rows = area.height.saturating_sub(adjusted_area.height);
+
+        adjusted_area.x = area.x.saturating_add(width_offset_in_cols / 2);
+        adjusted_area.y = area.y.saturating_add(height_offset_in_rows / 2);
+
+        adjusted_area
     }
 
     pub fn delete_from_terminal(&mut self) {
@@ -402,27 +416,29 @@ impl StatefulWidget for StivImageWidget {
         // if image is not uploaded, we prolly need to resize it (for the first time)
         // if event is resize in single image mode, we need to resize it
         // if event is toggle_mode, we need to resize it (of even save one instance of each size?
-        let mut new_area = area.clone();
+        //let mut new_area = area.clone();
 
         // resized area is always different from this, because of aspect ratio. We might need two
         // separate areas saved in the stiv_img instance. One for this area, one for the
         // aspect-ratio-adjusted one
-        log::info!("new area width: {}, height: {}", area.width, area.height);
+        log::info!("before adjusted new_area x,y, w,h {},{}, {},{}", area.x, area.y, area.width, area.height);
+        let new_area = state.get_area_adjusted_for_aspect_ratio(&area);
+        log::info!("after adjusted new_area x,y, w,h {},{}, {},{}", area.x, area.y, area.width, area.height);
+        log::info!("cell_height_px: {}", state.cell_height_px);
 
         // Maybe call adjust_for_aspect_ratio before this, separately, and compare against
         // last_adjusted_area!
         let area_size_changed = match state.last_area {
             Some(last_area) => {
-                (area.width, area.height) != (last_area.width, last_area.height)
+                (new_area.width, new_area.height) != (last_area.width, last_area.height)
             },
             None => false
         };
 
         // area_size_changed is always true!???
-        log::info!("state.uploaded = {}, area_size_changed = {} for img {}", state.uploaded, area_size_changed, state.path);
 
         if !state.uploaded || area_size_changed {
-            new_area = state.resize_to_fit(&area);
+            state.resize_to_fit(&new_area);
         }
 
         // if event is zoom, we do a separate, other rescale
