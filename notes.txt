@@ -17,18 +17,9 @@ fix image deletions on exit
 
 Priority:
 
-1. Profile what is so slow when scrolling in gallery mode, it shouldn't need to upload any new images, and just scrolling the unicode characters shouldn't be heavy what so ever, at least not for the stiv app
+1. Fix zooming in and out
 
-2. Fix zooming in and out
+2. Fix transfer mode temporary file, rather than direct (stream) or shm
 
-3. Fix transfer mode temporary file, rather than direct (stream) or shm
-
-2026-05-26 12:48:27 [INFO] new area width: 30, height: 11
-2026-05-26 12:48:27 [INFO] state.uploaded = true, area_size_changed = true for img assets/wide_wallpaper.jpg
-2026-05-26 12:48:27 [INFO] Setting last area width, height to 30, 1
-2026-05-26 12:48:27 [INFO] new area width: 30, height: 10
-2026-05-26 12:48:27 [INFO] state.uploaded = true, area_size_changed = true for img assets/rust.png
-2026-05-26 12:48:27 [INFO] Setting last area width, height to 30, 8
-2026-05-26 12:48:27 [INFO] new area width: 30, height: 11
-2026-05-26 12:48:27 [INFO] state.uploaded = true, area_size_changed = true for img assets/code.jpg
-2026-05-26 12:48:27 [INFO] Setting last area width, height to 30, 8
+One known bug:
+if we goto previous in single image mode, such that the cursor moves above the scroll offset, and then enter gallery mode and scroll up, we crash. That is because the scroll offset is not updated when we goto gallery mode, even if the cursor is updated.The same is probably true for goto next image in single image mode/scrolling down.
