@@ -3,7 +3,7 @@ use ratatui::{widgets::StatefulWidget, buffer::Buffer, prelude::Rect};
 use std::{fs, io, path::{self, Path, PathBuf}};
 use std::env;
 use std::collections::HashMap;
-use crate::{stiv_event::StivEvent, stiv_image::StivImage, ui};
+use crate::{stiv_event::StivEvent, stiv_image::StivImage, ui, detect_support};
 
 pub struct App {
     exit: bool,
@@ -29,6 +29,13 @@ impl App {
         } else {
             Path::new(path).to_path_buf()
         };
+
+        // Get support here, so we know if what kind of transmission we are to use (t= flag)
+        // - Stream (d)
+        // - Tmp file (t)
+        // - Shm (s) - not working fully yet
+        //
+        // How to pass this information down to the stiv_image layer?
 
         let image_paths = get_image_paths(&path_copy)?;
 
