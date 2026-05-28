@@ -168,7 +168,8 @@ impl StivImage {
 
         stdout.flush()?;
         self.uploaded = true;
-        //self.last_area = Some(*area);
+        self.last_area = Some(*area);
+        log::info!("in upload, setting last_area w,h to {},{}", area.width, area.height);
 
         Ok(())
     }
@@ -369,8 +370,6 @@ impl StivImage {
     fn get_area_adjusted_for_aspect_ratio(&self, area: &Rect) -> Rect {
         let mut adjusted_area = area.clone();
         let ratio = self.original_image.width() as f32 / self.original_image.height() as f32;
-        log::info!("ratio: {}", ratio);
-        log::info!("img height px: {}", self.original_image.height());
         let area_width_px = (area.width * self.cell_width_px) as f32;
         let area_height_px = (area.height * self.cell_height_px) as f32;
 
@@ -413,30 +412,16 @@ impl StatefulWidget for StivImageWidget {
     type State = StivImage;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut StivImage) {
-        // so, what do we need to do?
-        // if image is not uploaded, we prolly need to resize it (for the first time)
-        // if event is resize in single image mode, we need to resize it
-        // if event is toggle_mode, we need to resize it (of even save one instance of each size?
-        //let mut new_area = area.clone();
-
-        // resized area is always different from this, because of aspect ratio. We might need two
-        // separate areas saved in the stiv_img instance. One for this area, one for the
-        // aspect-ratio-adjusted one
-        log::info!("before adjusted new_area x,y, w,h {},{}, {},{}", area.x, area.y, area.width, area.height);
         let new_area = state.get_area_adjusted_for_aspect_ratio(&area);
-        log::info!("after adjusted new_area x,y, w,h {},{}, {},{}", area.x, area.y, area.width, area.height);
-        log::info!("cell_height_px: {}", state.cell_height_px);
+        log::info!("new_area w,h: {},{}", new_area.width, new_area.height);
 
-        // Maybe call adjust_for_aspect_ratio before this, separately, and compare against
-        // last_adjusted_area!
         let area_size_changed = match state.last_area {
             Some(last_area) => {
+                log::info!("last_area w,h: {},{}", last_area.width, last_area.height);
                 (new_area.width, new_area.height) != (last_area.width, last_area.height)
             },
             None => false
         };
-
-        // area_size_changed is always true!???
 
         if !state.uploaded || area_size_changed {
             state.resize_to_fit(&new_area);
@@ -444,11 +429,7 @@ impl StatefulWidget for StivImageWidget {
 
         // if event is zoom, we do a separate, other rescale
 
-        // we only need to upload if:
-        // a) it hasn't been uploaded for the first time
-        // b) we have done a source image resize
         if !state.uploaded {
-            log::info!("upload called for {}", state.path);
             if let Err(e) = state.upload_stream(&new_area) {
                 log::error!("upload error: {e}");
                 return;
@@ -456,6 +437,5 @@ impl StatefulWidget for StivImageWidget {
         }
 
         state.render_placeholders(new_area, buf);
-        state.last_area = Some(area);
     }
 }
