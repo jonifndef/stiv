@@ -369,19 +369,20 @@ impl StivImage {
     fn get_area_adjusted_for_aspect_ratio(&self, area: &Rect) -> Rect {
         let mut adjusted_area = area.clone();
         let ratio = self.original_image.width() as f32 / self.original_image.height() as f32;
-        let test_width = area.width as f32 * ratio;
+        log::info!("ratio: {}", ratio);
+        log::info!("img height px: {}", self.original_image.height());
+        let area_width_px = (area.width * self.cell_width_px) as f32;
+        let area_height_px = (area.height * self.cell_height_px) as f32;
 
-        if test_width > area.width as f32 {
-            let height = (area.width as f32 / ratio).ceil();
+        let test_width_px = area_height_px * ratio;
 
-            adjusted_area.height = height as u16;
+        if test_width_px > area_width_px as f32 {
+            let height_px = area_width_px / ratio;
+
+            adjusted_area.height = height_px as u16 / self.cell_height_px;
         } else {
-            adjusted_area.width = test_width as u16;
+            adjusted_area.width = test_width_px as u16 / self.cell_width_px;
         }
-        // this is 4 in rows, but it should be 1
-        log::info!("adjusted_area height after adjust: {} in rows", adjusted_area.height);
-        // this is 84 in px, but it should be 32
-        log::info!("adjusted_area height after adjust: {} in px", adjusted_area.height * self.cell_height_px);
 
         let width_offset_in_cols = area.width.saturating_sub(adjusted_area.width);
         let height_offset_in_rows = area.height.saturating_sub(adjusted_area.height);
@@ -447,6 +448,7 @@ impl StatefulWidget for StivImageWidget {
         // a) it hasn't been uploaded for the first time
         // b) we have done a source image resize
         if !state.uploaded {
+            log::info!("upload called for {}", state.path);
             if let Err(e) = state.upload_stream(&new_area) {
                 log::error!("upload error: {e}");
                 return;
