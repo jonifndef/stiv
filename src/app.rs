@@ -69,6 +69,9 @@ impl App {
 
             self.handle_events()?;
         }
+
+        self.delete_all_uploaded_images();
+
         ratatui::restore();
 
         Ok(())
@@ -214,6 +217,14 @@ impl App {
 
     fn handle_resize(&mut self, _cols: u16, _rows: u16) {
         self.current_event = StivEvent::TermResize;
+    }
+
+    fn delete_all_uploaded_images(&mut self) {
+        for path in &self.image_paths {
+            if let Some(img) = self.stiv_images.get_mut(path) {
+                img.delete_from_terminal();
+            }
+        }
     }
 }
 
