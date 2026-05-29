@@ -93,8 +93,8 @@ impl StivImage {
             &src,
             &mut dst,
             &fir::ResizeOptions::new()
-                //.resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Lanczos3)),
-                .resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Box)),
+                .resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Lanczos3)),
+                //.resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Box)),
         ).unwrap();
 
         let rgb_image = image::RgbImage::from_raw(
@@ -367,7 +367,7 @@ impl StivImage {
         return (test_width as u32, new_height);
     }
 
-    fn get_area_adjusted_for_aspect_ratio(&self, area: &Rect) -> Rect {
+    pub fn get_area_adjusted_for_aspect_ratio(&self, area: &Rect) -> Rect {
         let mut adjusted_area = area.clone();
         let ratio = self.original_image.width() as f32 / self.original_image.height() as f32;
         let area_width_px = (area.width * self.cell_width_px) as f32;

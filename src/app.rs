@@ -3,7 +3,7 @@ use ratatui::{widgets::StatefulWidget, buffer::Buffer, prelude::Rect};
 use std::{fs, io, path::{self, Path, PathBuf}};
 use std::env;
 use std::collections::HashMap;
-use crate::{stiv_event::StivEvent, stiv_image::StivImage, ui, detect_support};
+use crate::{stiv_event::StivEvent, stiv_image::StivImage, ui, renderer::Renderer};
 
 pub struct App {
     exit: bool,
@@ -12,6 +12,7 @@ pub struct App {
     pub stiv_images: HashMap<String, StivImage>,
     pub ui: ui::Ui,
     pub current_event: StivEvent,
+    pub renderer: Renderer,
 }
 
 pub struct AppWidget;
@@ -58,6 +59,7 @@ impl App {
             stiv_images: HashMap::new(),
             ui: ui::Ui::new(),
             current_event: StivEvent::None,
+            renderer: Renderer::new(),
         })
     }
 
