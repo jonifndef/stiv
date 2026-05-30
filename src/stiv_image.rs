@@ -26,12 +26,12 @@ pub struct StivImage {
     size_rows: u16,
     pos_col: u16,
     pos_row: u16,
-    id: u32,
+    pub id: u32,
     pub uploaded: bool,
     pub last_area: Option<Rect>,
     pub zoom_state: f32,
     original_image: DynamicImage,
-    displayed_image: DynamicImage,
+    pub displayed_image: DynamicImage,
     shm_file: Option<ShmFile>,
 }
 
