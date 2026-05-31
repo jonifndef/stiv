@@ -11,13 +11,13 @@ use crate::{detect_support, stiv_image::{StivImage}};
 
 
 trait Transport: Send {
-    fn upload(&self, stiv_image: &mut StivImage, area: &Rect) -> anyhow::Result<()>;
+    fn upload(&self, stiv_image: &mut StivImage, area: &Rect, renderer: &Renderer) -> anyhow::Result<()>;
 }
 
 struct DirectStreamTransport;
 
 impl Transport for DirectStreamTransport {
-    fn upload(&self, stiv_img: &mut StivImage, area: &Rect) -> anyhow::Result<()> {
+    fn upload(&self, stiv_img: &mut StivImage, area: &Rect, renderer: &Renderer) -> anyhow::Result<()> {
         let img = stiv_img.displayed_image.clone();
         let img_rgb = img.to_rgb8();
         let width  = img_rgb.width();
@@ -73,7 +73,7 @@ impl Transport for DirectStreamTransport {
 struct TmpFileTransport;
 
 impl Transport for TmpFileTransport {
-    fn upload(&self, stiv_img: &mut StivImage, area: &Rect) -> anyhow::Result<()> {
+    fn upload(&self, stiv_img: &mut StivImage, area: &Rect, renderer: &Renderer) -> anyhow::Result<()> {
         let img = stiv_img.displayed_image.clone();
         let img_rgb = img.to_rgb8();
         let width  = img_rgb.width();
@@ -95,7 +95,19 @@ impl Transport for TmpFileTransport {
         let id = stiv_img.id;
         let mut stdout = io::stdout();
 
-        let data = format!("\x1b_Ga=T,f=24,t=f,C=1,U=1,i={},s={},v={},q=2;{}\x1b\\", id, width, height, encoded_path);
+        let tmux_header =
+            renderer.is_tmux
+            .then_some(get_tmux_header(renderer.tmux_nest_count));
+        let tmux_tail = renderer.is_tmux.then_some(get_tmux_tail(renderer.tmux_nest_count));
+
+        let mut data = String::from("");
+        if renderer.is_tmux {
+            data.push_str(tmux_header.unwrap().as_str());
+        }
+        data.push_str(format!("\x1b_Ga=T,f=24,t=f,C=1,U=1,i={},s={},v={},q=2;{}\x1b\\", id, width, height, encoded_path).as_str());
+        if renderer.is_tmux {
+            data.push_str(tmux_tail.unwrap().as_str());
+        }
 
         stdout.write_all(data.as_bytes())?;
         stdout.flush()?;
@@ -113,6 +125,7 @@ struct ShmTransport;
 pub struct Renderer {
     transport: Box<dyn Transport>,
     is_tmux: bool,
+    tmux_nest_count: u32,
 }
 
 impl Renderer {
@@ -123,7 +136,8 @@ impl Renderer {
             } else {
                 Box::new(TmpFileTransport)
             },
-            is_tmux: detect_support::is_tmux()
+            is_tmux: detect_support::is_tmux(),
+            tmux_nest_count: detect_support::get_tmux_nest_count(),
         }
     }
 
@@ -146,11 +160,29 @@ impl Renderer {
         // if event is zoom, we do a separate, other rescale
 
         if !stiv_image.uploaded {
-            self.transport.upload(stiv_image, &new_area)?;
+            self.transport.upload(stiv_image, &new_area, &self)?;
         }
 
         stiv_image.render_placeholders(new_area, buf);
 
         Ok(())
     }
+}
+
+pub fn get_tmux_header(tmux_nest_count: u32) -> String {
+    let mut header: String = String::new();
+    for i in 0..tmux_nest_count {
+        header.push_str(&"\u{1b}".repeat(2usize.pow(i)));
+        header.push_str("Ptmux;");
+    }
+    header
+}
+
+pub fn get_tmux_tail(tmux_nest_count: u32) -> String {
+    let mut tail: String = String::new();
+    for i in (0..tmux_nest_count).rev() {
+        tail.push_str(&"\u{1b}".repeat(2usize.pow(i)));
+        tail.push('\\');
+    }
+    tail
 }
