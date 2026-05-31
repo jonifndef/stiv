@@ -8,6 +8,7 @@ use fast_image_resize::images::Image as FirImage;
 use std::sync::atomic::{AtomicU32, Ordering};
 use ratatui::style::Color;
 use itertools::{Itertools, Position};
+use tempfile::NamedTempFile;
 use crate::{kitty_diacritics, shm::ShmFile, stiv_event::StivEvent, win_info::WinInfo};
 
 static NEXT_KITTY_ID: AtomicU32 = AtomicU32::new(1);
@@ -33,6 +34,7 @@ pub struct StivImage {
     original_image: DynamicImage,
     pub displayed_image: DynamicImage,
     shm_file: Option<ShmFile>,
+    pub tmp_file: Option<NamedTempFile>,
 }
 
 impl StivImage {
@@ -59,6 +61,7 @@ impl StivImage {
             original_image: img.clone(),
             displayed_image: img,
             shm_file: shm_file,
+            tmp_file: None,
         })
     }
 

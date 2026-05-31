@@ -30,6 +30,6 @@ pub fn is_ssh() -> bool {
         }
     }
 
-    true // we only support direct stream as of now
-    // false
+    //true // we only support direct stream as of now
+    false
 }
