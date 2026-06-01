@@ -172,7 +172,6 @@ impl StivImage {
         stdout.flush()?;
         self.uploaded = true;
         self.last_area = Some(*area);
-        log::info!("in upload, setting last_area w,h to {},{}", area.width, area.height);
 
         Ok(())
     }
@@ -416,11 +415,9 @@ impl StatefulWidget for StivImageWidget {
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut StivImage) {
         let new_area = state.get_area_adjusted_for_aspect_ratio(&area);
-        log::info!("new_area w,h: {},{}", new_area.width, new_area.height);
 
         let area_size_changed = match state.last_area {
             Some(last_area) => {
-                log::info!("last_area w,h: {},{}", last_area.width, last_area.height);
                 (new_area.width, new_area.height) != (last_area.width, last_area.height)
             },
             None => false

@@ -95,20 +95,24 @@ impl Transport for TmpFileTransport {
         let id = stiv_img.id;
         let mut stdout = io::stdout();
 
-        let tmux_header =
-            renderer.is_tmux
-            .then_some(get_tmux_header(renderer.tmux_nest_count));
-        let tmux_tail = renderer.is_tmux.then_some(get_tmux_tail(renderer.tmux_nest_count));
+        //let tmux_header =
+        //    renderer.is_tmux
+        //    .then_some(get_tmux_header(renderer.tmux_nest_count));
+        //let tmux_tail = renderer.is_tmux.then_some(get_tmux_tail(renderer.tmux_nest_count));
 
         let mut data = String::from("");
         if renderer.is_tmux {
-            data.push_str(tmux_header.unwrap().as_str());
+            //data.push_str(tmux_header.unwrap().as_str());
         }
-        data.push_str(format!("\x1b_Ga=T,f=24,t=f,C=1,U=1,i={},s={},v={},q=2;{}\x1b\\", id, width, height, encoded_path).as_str());
+        //data.push_str(format!("\x1b_Ga=T,f=24,t=f,C=1,U=1,i={},s={},v={},q=2;{}\x1b\\", id, width, height, encoded_path).as_str());
+        data.push_str(format!("\x1bPtmux;\x1b\x1b_Ga=T,f=24,t=f,C=1,U=1,i={},s={},v={},q=2;{}\x1b\x1b\\\x1b\\", id, width, height, encoded_path).as_str());
+        // this works:
+        // \x1bPtmux;\x1b\x1b_Gf=24,s=1680,v=1035,m=0;FhYWFhYWFhWFhYWFhYW\x1b\x1b\\x1b\
         if renderer.is_tmux {
-            data.push_str(tmux_tail.unwrap().as_str());
+            //data.push_str(tmux_tail.unwrap().as_str());
         }
 
+        log::info!("data string: {}", data);
         stdout.write_all(data.as_bytes())?;
         stdout.flush()?;
         stiv_img.uploaded = true;
