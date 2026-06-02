@@ -15,6 +15,7 @@ pub fn is_tmux() -> bool {
     false
 }
 
+#[allow(unused)]
 pub fn get_tmux_nest_count() -> u32 {
     std::env::var("TMUX_NEST_COUNT")
         .map(|s| str::parse(&s).unwrap_or(1))
@@ -30,6 +31,6 @@ pub fn is_ssh() -> bool {
         }
     }
 
-    //true // we only support direct stream as of now
-    false
+    true // we only support direct stream as of now
+    //false
 }

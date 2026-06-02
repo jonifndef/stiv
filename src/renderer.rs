@@ -9,6 +9,11 @@ use tempfile::NamedTempFile;
 
 use crate::{detect_support, stiv_image::{StivImage}};
 
+const DEFAULT_START_SEQUENCE: &str = "\x1b_G";
+const DEFAULT_END_SEQUENCE:   &str = "\x1b\\";
+const TMUX_START_SEQUENCE:    &str = "\x1bPtmux;\x1b\x1b_G";
+const TMUX_END_SEQUENCE:      &str = "\x1b\x1b\\\x1b\\";
+const UNICODE_PLACEHOLDER:    &str = "\u{10EEEE}";
 
 trait Transport: Send {
     fn upload(&self, stiv_image: &mut StivImage, area: &Rect, renderer: &Renderer) -> anyhow::Result<()>;
@@ -125,23 +130,25 @@ impl Transport for TmpFileTransport {
 
 struct ShmTransport;
 
-
 pub struct Renderer {
     transport: Box<dyn Transport>,
     is_tmux: bool,
-    tmux_nest_count: u32,
+    start_escape_sequence: &'static str,
+    end_escape_sequence: &'static str,
 }
 
 impl Renderer {
     pub fn new() -> Self {
+        let is_tmux = detect_support::is_tmux();
         Self {
             transport: if detect_support::is_ssh() {
                 Box::new(DirectStreamTransport)
             } else {
                 Box::new(TmpFileTransport)
             },
-            is_tmux: detect_support::is_tmux(),
-            tmux_nest_count: detect_support::get_tmux_nest_count(),
+            is_tmux: is_tmux,
+            start_escape_sequence: if is_tmux { TMUX_START_SEQUENCE } else { DEFAULT_START_SEQUENCE },
+            end_escape_sequence: if is_tmux { TMUX_END_SEQUENCE } else { DEFAULT_END_SEQUENCE },
         }
     }
 
