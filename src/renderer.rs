@@ -58,11 +58,11 @@ impl Transport for DirectStreamTransport {
             };
 
             let mut out = Vec::new();
-            out.extend_from_slice(b"\x1b_G");
+            out.extend_from_slice(renderer.start_escape_sequence.as_bytes());
             out.extend_from_slice(control.as_bytes());
             out.push(b';');
             out.extend_from_slice(chunk);
-            out.extend_from_slice(b"\x1b\\");
+            out.extend_from_slice(renderer.end_escape_sequence.as_bytes());
             stdout.write_all(&out)?;
         }
 
@@ -100,22 +100,10 @@ impl Transport for TmpFileTransport {
         let id = stiv_img.id;
         let mut stdout = io::stdout();
 
-        //let tmux_header =
-        //    renderer.is_tmux
-        //    .then_some(get_tmux_header(renderer.tmux_nest_count));
-        //let tmux_tail = renderer.is_tmux.then_some(get_tmux_tail(renderer.tmux_nest_count));
-
         let mut data = String::from("");
-        if renderer.is_tmux {
-            //data.push_str(tmux_header.unwrap().as_str());
-        }
-        //data.push_str(format!("\x1b_Ga=T,f=24,t=f,C=1,U=1,i={},s={},v={},q=2;{}\x1b\\", id, width, height, encoded_path).as_str());
-        data.push_str(format!("\x1bPtmux;\x1b\x1b_Ga=T,f=24,t=f,C=1,U=1,i={},s={},v={},q=2;{}\x1b\x1b\\\x1b\\", id, width, height, encoded_path).as_str());
-        // this works:
-        // \x1bPtmux;\x1b\x1b_Gf=24,s=1680,v=1035,m=0;FhYWFhYWFhWFhYWFhYW\x1b\x1b\\x1b\
-        if renderer.is_tmux {
-            //data.push_str(tmux_tail.unwrap().as_str());
-        }
+        data.push_str(renderer.start_escape_sequence);
+        data.push_str(format!("a=T,f=24,t=f,C=1,U=1,i={},s={},v={},q=2;{}", id, width, height, encoded_path).as_str());
+        data.push_str(renderer.end_escape_sequence);
 
         log::info!("data string: {}", data);
         stdout.write_all(data.as_bytes())?;
