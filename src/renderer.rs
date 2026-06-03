@@ -7,6 +7,7 @@ use base64::{prelude::BASE64_STANDARD, Engine};
 use ratatui::{buffer::Buffer, layout::Rect};
 use tempfile::NamedTempFile;
 
+use crate::stiv_event::StivEvent;
 use crate::{detect_support, stiv_image::{StivImage}};
 
 const DEFAULT_START_SEQUENCE: &str = "\x1b_G";
@@ -43,11 +44,6 @@ impl Transport for DirectStreamTransport {
 
             let control = if is_first {
                 // All metadata on the first chunk only
-                //format!("a=T,f=24,t=d,U=1,i={id},c={cols},r={rows},s={width},v={height},q=2,m={m}")
-                // This is ugly af, but it's just try
-                // Eventually, we want the image to scale such that if the terminal allows is to
-                // grow vertically, even if the aspect ratio has limited it in the horizontal axis,
-                // and vice versa
                 if stiv_img.zoom_state != 1.0 {
                     format!("a=T,f=24,t=d,C=1,U=1,i={},s={},v={},x={},y={},w={},h={},q=2,m={}", id, width, height, area.x, area.y, area.width, area.height, m)
                 } else {
@@ -139,13 +135,34 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self, stiv_image: &mut StivImage, area: &Rect, buf: &mut Buffer) -> anyhow::Result<()> {
+    pub fn render(&mut self, stiv_image: &mut StivImage, area: &Rect, buf: &mut Buffer, current_event: &StivEvent) -> anyhow::Result<()> {
         let new_area = stiv_image.get_area_adjusted_for_aspect_ratio(&area);
-        log::info!("new_area w,h: {},{}", new_area.width, new_area.height);
+
+        // So, if we have a zoom event, we have already rendered the image in the correct aspect
+        // ratio, so we can look at last_area and determine how the area should grow
+        // i.e. if last_area.width == area.width, then the area height can be grown, but not the
+        // width, and vice versa.
+        // We will need to call resize_to_fit(), but with an area that stretches outisde the
+        // visible terminal. This should be calculated in a seperate function. We don't really need
+        // to call get_area_adjusted_for_aspect_ratio() on a ZoomEvent at all.
+        // One problem is that last_area is set in upload, so it will be set to whatever is passed
+        // to that one. But ideally, I want last_area to be set to something that is inside the
+        // term window, such that I can calculate how to stretch/shrink within that term window.
+        // One area decides how the image will be resized, passed to resize_to_fit. This area
+        // can stretch outside the term window.
+        // Another area decides where the unicode placeholders will be drawn, this is the one
+        // passed to render_placeholders, and this one _cannot_ stretch outside the term window.
+        // This is the one that we compare the term window area to in order to know how the aspect
+        // ration can change when zooming in/out.
+        // Upload() takes area as argument, but it is only update last_area at the end, kinda
+        // unnessecary tbh. Just set it after the call to upload?
+        // We might just skip the regular resize_to_fit when zooming. After all, it doesn't feel
+        // right to fit the image to a constrained area when we want to zoom, it's more logical
+        // to just resize on pixel-values and just use an "area" to define an area within the
+        // terminal window (like we are using last_area now).
 
         let area_size_changed = match stiv_image.last_area {
             Some(last_area) => {
-                log::info!("last_area w,h: {},{}", last_area.width, last_area.height);
                 (new_area.width, new_area.height) != (last_area.width, last_area.height)
             },
             None => false
@@ -154,8 +171,6 @@ impl Renderer {
         if !stiv_image.uploaded || area_size_changed {
             stiv_image.resize_to_fit(&new_area);
         }
-
-        // if event is zoom, we do a separate, other rescale
 
         if !stiv_image.uploaded {
             self.transport.upload(stiv_image, &new_area, &self)?;

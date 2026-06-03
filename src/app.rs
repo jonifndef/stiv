@@ -90,6 +90,7 @@ impl App {
                 KeyCode::Char('n') => self.handle_next(),
                 KeyCode::Char('p') => self.handle_previous(),
                 KeyCode::Char('+') => self.handle_zoom_in(),
+                KeyCode::Char('-') => self.handle_zoom_out(),
                 KeyCode::Enter => self.handle_toggle_mode(),
                 _ => {}
             },
@@ -192,26 +193,18 @@ impl App {
     }
 
     fn handle_zoom_in(&mut self) {
-        // It is better to set a field in the StivImageWidget struct that gets created per-frame.
-        // This information does not need to be
-        // a) global, it only affects a single stiv_image most of the time, and
-        // b) persistent, even as it is now, the event state is persistent in App, but it needn't
-        // be, it's per-frame data
-        // This probably goes for all StivEvent:s
         match self.current_mode {
-            Mode::SingleImage => {
-                let current_img_path = &self.image_paths[self.ui.current_selected_img_idx];
-                let current_stiv_img = self.stiv_images.get_mut(current_img_path).unwrap();
-
-                current_stiv_img.zoom_state = current_stiv_img.zoom_state + 0.25;
-                self.current_event = StivEvent::ZoomIn;
-            },
-            Mode::GalleryView => {
-                log::info!("Zooming in in gallery view!");
-            }
+            Mode::SingleImage => self.current_event = StivEvent::ZoomIn,
+            Mode::GalleryView => log::info!("Zooming in in gallery view!"),
         }
     }
 
+    fn handle_zoom_out(&mut self) {
+        match self.current_mode {
+            Mode::SingleImage => self.current_event = StivEvent::ZoomOut,
+            Mode::GalleryView => log::info!("Zooming in in gallery view!"),
+        }
+    }
     fn handle_toggle_mode(&mut self) {
         self.current_mode = if self.current_mode == Mode::GalleryView { Mode::SingleImage } else { Mode::GalleryView };
         self.current_event = StivEvent::ToggleMode;
