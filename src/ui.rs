@@ -1,9 +1,7 @@
 //use chrono::Duration;
 use ratatui::{buffer::Buffer, layout::{Constraint, Direction, Layout, Rect,}, prelude::{StatefulWidget, Widget}, style::{Color, Style}, text::Line, widgets::{Block, BorderType, Borders, Scrollbar, ScrollbarOrientation, ScrollbarState}};
-use rustix::path::Arg;
 use crate::{app, win_info::WinInfo, App};
 use crate::StivImage;
-use crate::stiv_image::StivImageWidget;
 use std::path::Path;
 //use std::iter;
 

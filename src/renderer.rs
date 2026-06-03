@@ -110,7 +110,6 @@ impl Transport for TmpFileTransport {
         stdout.flush()?;
         stiv_img.uploaded = true;
         stiv_img.last_area = Some(*area);
-        log::info!("in upload, setting last_area w,h to {},{}", area.width, area.height);
 
         Ok(())
     }
@@ -166,22 +165,4 @@ impl Renderer {
 
         Ok(())
     }
-}
-
-pub fn get_tmux_header(tmux_nest_count: u32) -> String {
-    let mut header: String = String::new();
-    for i in 0..tmux_nest_count {
-        header.push_str(&"\u{1b}".repeat(2usize.pow(i)));
-        header.push_str("Ptmux;");
-    }
-    header
-}
-
-pub fn get_tmux_tail(tmux_nest_count: u32) -> String {
-    let mut tail: String = String::new();
-    for i in (0..tmux_nest_count).rev() {
-        tail.push_str(&"\u{1b}".repeat(2usize.pow(i)));
-        tail.push('\\');
-    }
-    tail
 }
