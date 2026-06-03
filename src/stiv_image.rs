@@ -65,6 +65,43 @@ impl StivImage {
         })
     }
 
+    fn resize(&mut self, new_width_px: u32, new_height_px: u32) -> anyhow::Result<()> {
+        let src_rgb = self.original_image.to_rgb8();
+
+        let src = fir::images::ImageRef::new(
+            src_rgb.width(),
+            src_rgb.height(),
+            src_rgb.as_raw(),
+            fir::PixelType::U8x3,
+        ).unwrap();
+
+        let mut dst = FirImage::new(new_width_px, new_height_px, fir::PixelType::U8x3);
+
+        let mut resizer = fir::Resizer::new();
+
+        resizer.resize(
+            &src,
+            &mut dst,
+            &fir::ResizeOptions::new()
+                .resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Lanczos3)),
+                //.resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Box)),
+        ).unwrap();
+
+        let rgb_image = image::RgbImage::from_raw(
+            new_width_px,
+            new_height_px,
+            dst.into_vec(),
+        ).unwrap();
+
+        self.displayed_image = DynamicImage::ImageRgb8(rgb_image);
+        self.uploaded = false;
+        self.width_px = self.displayed_image.width() as u16;
+        self.height_px = self.displayed_image.height() as u16;
+
+        Ok(())
+    }
+
+    // TODO: Add return type, remove unwrap()
     pub fn resize_to_fit(&mut self, area: &Rect) {
         let new_width = (area.width * self.cell_width_px) as u32;
         let new_height = (area.height * self.cell_height_px) as u32;
@@ -79,38 +116,9 @@ impl StivImage {
         let new_img_width  = (new_width  as f32 * self.zoom_state) as u32;
         let new_img_height = (new_height as f32 * self.zoom_state) as u32;
 
-        let src_rgb = self.original_image.to_rgb8();
-
-        let src = fir::images::ImageRef::new(
-            src_rgb.width(),
-            src_rgb.height(),
-            src_rgb.as_raw(),
-            fir::PixelType::U8x3,
-        ).unwrap();
-
-        let mut dst = FirImage::new(new_img_width, new_img_height, fir::PixelType::U8x3);
-
-        let mut resizer = fir::Resizer::new();
-
-        resizer.resize(
-            &src,
-            &mut dst,
-            &fir::ResizeOptions::new()
-                .resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Lanczos3)),
-                //.resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Box)),
-        ).unwrap();
-
-        let rgb_image = image::RgbImage::from_raw(
-            new_img_width,
-            new_img_height,
-            dst.into_vec(),
-        ).unwrap();
-
-        self.displayed_image = DynamicImage::ImageRgb8(rgb_image);
-        self.uploaded = false;
+        self.resize(new_img_width, new_img_height).unwrap();
 
         ()
-        //return Rect::new(area.x + (width_offset_in_cols / 2), area.y + (height_offset_in_rows / 2), new_width_in_cols, new_height_in_rows);
     }
 
     pub fn upload_shm(&mut self, area: &Rect) -> anyhow::Result<()> {
@@ -222,5 +230,16 @@ impl StivImage {
         let _ = stdout.flush();
         self.uploaded = false;
         self.last_area = None;
+    }
+
+    pub fn resize_zoom_in(&mut self) -> anyhow::Result<()> {
+        self.zoom_state = self.zoom_state + 0.20;
+
+        let new_width = (self.width_px as f32 * self.zoom_state) as u32;
+        let new_height = (self.height_px as f32 * self.zoom_state) as u32;
+
+        self.resize(new_width, new_height)?;
+
+        Ok(())
     }
 }

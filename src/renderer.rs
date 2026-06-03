@@ -17,13 +17,13 @@ const TMUX_END_SEQUENCE:      &str = "\x1b\x1b\\\x1b\\";
 const UNICODE_PLACEHOLDER:    &str = "\u{10EEEE}";
 
 trait Transport: Send {
-    fn upload(&self, stiv_image: &mut StivImage, area: &Rect, renderer: &Renderer) -> anyhow::Result<()>;
+    fn upload(&self, stiv_image: &mut StivImage, renderer: &Renderer) -> anyhow::Result<()>;
 }
 
 struct DirectStreamTransport;
 
 impl Transport for DirectStreamTransport {
-    fn upload(&self, stiv_img: &mut StivImage, area: &Rect, renderer: &Renderer) -> anyhow::Result<()> {
+    fn upload(&self, stiv_img: &mut StivImage, renderer: &Renderer) -> anyhow::Result<()> {
         let img = stiv_img.displayed_image.clone();
         let img_rgb = img.to_rgb8();
         let width  = img_rgb.width();
@@ -43,12 +43,7 @@ impl Transport for DirectStreamTransport {
             let m = if is_last { 0 } else { 1 };
 
             let control = if is_first {
-                // All metadata on the first chunk only
-                if stiv_img.zoom_state != 1.0 {
-                    format!("a=T,f=24,t=d,C=1,U=1,i={},s={},v={},x={},y={},w={},h={},q=2,m={}", id, width, height, area.x, area.y, area.width, area.height, m)
-                } else {
-                    format!("a=T,f=24,t=d,C=1,U=1,i={id},s={width},v={height},q=2,m={m}")
-                }
+                format!("a=T,f=24,t=d,C=1,U=1,i={id},s={width},v={height},q=2,m={m}")
             } else {
                 format!("m={m},i={id},q=2")
             };
@@ -64,8 +59,6 @@ impl Transport for DirectStreamTransport {
 
         stdout.flush()?;
         stiv_img.uploaded = true;
-        stiv_img.last_area = Some(*area);
-        log::info!("in upload, setting last_area w,h to {},{}", area.width, area.height);
 
         Ok(())
     }
@@ -74,7 +67,7 @@ impl Transport for DirectStreamTransport {
 struct TmpFileTransport;
 
 impl Transport for TmpFileTransport {
-    fn upload(&self, stiv_img: &mut StivImage, area: &Rect, renderer: &Renderer) -> anyhow::Result<()> {
+    fn upload(&self, stiv_img: &mut StivImage, renderer: &Renderer) -> anyhow::Result<()> {
         let img = stiv_img.displayed_image.clone();
         let img_rgb = img.to_rgb8();
         let width  = img_rgb.width();
@@ -105,7 +98,6 @@ impl Transport for TmpFileTransport {
         stdout.write_all(data.as_bytes())?;
         stdout.flush()?;
         stiv_img.uploaded = true;
-        stiv_img.last_area = Some(*area);
 
         Ok(())
     }
@@ -136,6 +128,15 @@ impl Renderer {
     }
 
     pub fn render(&mut self, stiv_image: &mut StivImage, area: &Rect, buf: &mut Buffer, current_event: &StivEvent) -> anyhow::Result<()> {
+
+        if *current_event == StivEvent::ZoomIn {
+            stiv_image.resize_zoom_in()?;
+
+            // get new adjusted area
+        } else {
+
+        }
+
         let new_area = stiv_image.get_area_adjusted_for_aspect_ratio(&area);
 
         // So, if we have a zoom event, we have already rendered the image in the correct aspect
@@ -173,7 +174,8 @@ impl Renderer {
         }
 
         if !stiv_image.uploaded {
-            self.transport.upload(stiv_image, &new_area, &self)?;
+            self.transport.upload(stiv_image, &self)?;
+            stiv_image.last_area = Some(new_area);
         }
 
         stiv_image.render_placeholders(new_area, buf);
