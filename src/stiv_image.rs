@@ -67,6 +67,8 @@ impl StivImage {
 
     fn resize(&mut self, new_width_px: u32, new_height_px: u32) -> anyhow::Result<()> {
         let src_rgb = self.original_image.to_rgb8();
+        //let src_rgb = self.displayed_image.to_rgb8(); this might be faster, I dunno. But it looks
+        //worse
 
         let src = fir::images::ImageRef::new(
             src_rgb.width(),
@@ -121,6 +123,7 @@ impl StivImage {
         ()
     }
 
+    #[allow(unused)]
     pub fn upload_shm(&mut self, area: &Rect) -> anyhow::Result<()> {
         let img = self.displayed_image.clone();
         let img_rgb = img.into_rgb8();
@@ -196,6 +199,35 @@ impl StivImage {
         }
     }
 
+    pub fn get_crop_area_for_zoomed_img(&mut self, area: &Rect) -> Rect {
+        let mut cols = self.width_px.div_ceil(self.cell_width_px);
+        let mut rows = self.height_px.div_ceil(self.cell_height_px);
+
+        if cols > area.width {
+            cols = area.width; 
+        }
+        if rows > area.height {
+            rows = area.height;
+        }
+        let x = area.width.saturating_sub(cols) / 2;
+        let y = area.height.saturating_sub(rows) / 2;
+        //let x = cols.saturating_sub(area.width) / 2;
+        //let y = rows.saturating_sub(area.height) / 2;
+
+        // This is not the crop area passed to the terminal in upload(), this is just the area to
+        // render unicode placeholders in.
+        // The crop area passed to the terminal on upload() can be calculated on the first zoom
+        // event by simply just
+        // Maybe set last_area to the crop area? And compare with that when setting it?
+        // x,y,w,h crop area is in pixels, though. So it is not really related to last_area.
+        Rect {
+            x: x,
+            y: y,
+            width: cols,
+            height: rows
+        }
+    }
+
     pub fn get_area_adjusted_for_aspect_ratio(&self, area: &Rect) -> Rect {
         let mut adjusted_area = area.clone();
         let ratio = self.original_image.width() as f32 / self.original_image.height() as f32;
@@ -233,7 +265,7 @@ impl StivImage {
     }
 
     pub fn resize_zoom_in(&mut self) -> anyhow::Result<()> {
-        self.zoom_state = self.zoom_state + 0.20;
+        self.zoom_state = self.zoom_state + 0.15;
 
         let new_width = (self.width_px as f32 * self.zoom_state) as u32;
         let new_height = (self.height_px as f32 * self.zoom_state) as u32;
@@ -241,5 +273,10 @@ impl StivImage {
         self.resize(new_width, new_height)?;
 
         Ok(())
+    }
+
+    pub fn get_zoom_crop_area_px(&mut self) -> Rect {
+
+        Rect::default()
     }
 }

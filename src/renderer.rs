@@ -94,7 +94,6 @@ impl Transport for TmpFileTransport {
         data.push_str(format!("a=T,f=24,t=f,C=1,U=1,i={},s={},v={},q=2;{}", id, width, height, encoded_path).as_str());
         data.push_str(renderer.end_escape_sequence);
 
-        log::info!("data string: {}", data);
         stdout.write_all(data.as_bytes())?;
         stdout.flush()?;
         stiv_img.uploaded = true;
@@ -129,14 +128,43 @@ impl Renderer {
 
     pub fn render(&mut self, stiv_image: &mut StivImage, area: &Rect, buf: &mut Buffer, current_event: &StivEvent) -> anyhow::Result<()> {
 
-        let mut new_area = Rect::default();
+        let new_area: Rect;
 
         match *current_event {
             StivEvent::ZoomIn => {
                 stiv_image.resize_zoom_in()?;
 
-                // get new adjusted area
-                //new_area = get_area_for_zoomed_img()?;
+                new_area = stiv_image.get_crop_area_for_zoomed_img(&area);
+
+                let img = stiv_image.displayed_image.clone();
+                let img_rgb = img.to_rgb8();
+                let width  = img_rgb.width();
+                let height = img_rgb.height();
+                let raw    = img_rgb.as_raw();
+
+                let tmp_file: &mut NamedTempFile = stiv_image.tmp_file.get_or_insert_with(|| {
+                    NamedTempFile::new().expect("failed to create temp file")
+                });
+
+                tmp_file.seek(SeekFrom::Start(0))?;
+                tmp_file.as_file().set_len(0)?;
+                tmp_file.write_all(raw)?;
+                tmp_file.flush()?;
+
+                let path_str = tmp_file.path().to_str().ok_or_else(|| anyhow!("path is not valid UTF-8"))?;
+                let encoded_path = BASE64_STANDARD.encode(path_str);
+
+                let id = stiv_image.id;
+                let mut stdout = io::stdout();
+
+                let mut data = String::from("");
+                data.push_str(self.start_escape_sequence);
+                data.push_str(format!("a=T,f=24,t=f,C=1,U=1,i={},s={},v={},q=2,x={},y={},w={},h={};{}", id, width, height, new_area.x, new_area.y, new_area.width, new_area.height, encoded_path).as_str());
+                data.push_str(self.end_escape_sequence);
+
+                stdout.write_all(data.as_bytes())?;
+                stdout.flush()?;
+                stiv_image.uploaded = true;
             },
             _ => {
                 new_area = stiv_image.get_area_adjusted_for_aspect_ratio(&area);
