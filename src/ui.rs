@@ -1,6 +1,6 @@
 //use chrono::Duration;
 use ratatui::{buffer::Buffer, layout::{Constraint, Direction, Layout, Rect,}, prelude::{StatefulWidget, Widget}, style::{Color, Style}, text::Line, widgets::{Block, BorderType, Borders, Scrollbar, ScrollbarOrientation, ScrollbarState}};
-use crate::{app, win_info::WinInfo, App};
+use crate::{App, app, stiv_event::StivEvent, win_info::WinInfo};
 use crate::StivImage;
 use std::path::Path;
 //use std::iter;
@@ -79,6 +79,7 @@ impl Ui {
             stiv_img.cell_height_px = win_info.cell_height_px;
             //StivImageWidget { current_event: app.current_event }.render(*area, buffer, stiv_img);
             let _ = app.renderer.render(stiv_img, area, buffer, &app.current_event);
+            app.current_event = StivEvent::None;
         }
     }
 

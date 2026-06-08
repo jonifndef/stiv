@@ -35,6 +35,15 @@ pub struct StivImage {
     pub displayed_image: DynamicImage,
     shm_file: Option<ShmFile>,
     pub tmp_file: Option<NamedTempFile>,
+    pub crop_area: Option<ImgRect>
+}
+
+#[derive(Default, Clone)]
+pub struct ImgRect {
+    pub x_px: u32,
+    pub y_px: u32,
+    pub width_px: u32,
+    pub height_px: u32
 }
 
 impl StivImage {
@@ -62,6 +71,7 @@ impl StivImage {
             displayed_image: img,
             shm_file: shm_file,
             tmp_file: None,
+            crop_area: None,
         })
     }
 
@@ -199,18 +209,20 @@ impl StivImage {
         }
     }
 
-    pub fn get_crop_area_for_zoomed_img(&mut self, area: &Rect) -> Rect {
+    pub fn get_display_area_for_zoomed_img(&mut self, area: &Rect) -> Rect {
         let mut cols = self.width_px.div_ceil(self.cell_width_px);
         let mut rows = self.height_px.div_ceil(self.cell_height_px);
 
         if cols > area.width {
-            cols = area.width; 
+            cols = area.width;
         }
         if rows > area.height {
             rows = area.height;
         }
-        let x = area.width.saturating_sub(cols) / 2;
-        let y = area.height.saturating_sub(rows) / 2;
+        //let x = area.width.saturating_sub(cols) / 2;
+        //let y = area.height.saturating_sub(rows) / 2;
+        let x = area.x + area.width.saturating_sub(cols) / 2;
+        let y = area.y + area.height.saturating_sub(rows) / 2;
         //let x = cols.saturating_sub(area.width) / 2;
         //let y = rows.saturating_sub(area.height) / 2;
 
@@ -253,6 +265,23 @@ impl StivImage {
         adjusted_area
     }
 
+    pub fn get_crop_area_for_zoomed_img(&mut self, area: &Rect) -> anyhow::Result<ImgRect> {
+        let x_offset = self.displayed_image.width().saturating_sub(area.width as u32 * self.cell_width_px as u32) / 2;
+        let y_offset = self.displayed_image.height().saturating_sub(area.height as u32 * self.cell_height_px as u32) / 2;
+        log::info!("img h: {}, area h: {}", self.displayed_image.height(), area.height * self.cell_height_px);
+
+        let crop_area = ImgRect {
+            x_px: x_offset,
+            y_px: y_offset,
+            width_px: (area.width * self.cell_width_px) as u32,
+            height_px: (area.height * self.cell_height_px) as u32,
+        };
+
+        self.crop_area = Some(crop_area.clone());
+
+        return Ok(crop_area);
+    }
+
     pub fn delete_from_terminal(&mut self) {
         if !self.uploaded { return; }
         let id = self.id;
@@ -264,14 +293,22 @@ impl StivImage {
         self.last_area = None;
     }
 
+    //pub fn resize_zoom_in(&mut self) -> anyhow::Result<()> {
+    //    self.zoom_state = self.zoom_state + 0.15;
+
+    //    let new_width = (self.width_px as f32 * self.zoom_state) as u32;
+    //    let new_height = (self.height_px as f32 * self.zoom_state) as u32;
+
+    //    self.resize(new_width, new_height)?;
+
+    //    Ok(())
+    //}
     pub fn resize_zoom_in(&mut self) -> anyhow::Result<()> {
-        self.zoom_state = self.zoom_state + 0.15;
-
-        let new_width = (self.width_px as f32 * self.zoom_state) as u32;
-        let new_height = (self.height_px as f32 * self.zoom_state) as u32;
-
+        self.zoom_state += 0.15;
+        // Use original_image dimensions, not width_px/height_px
+        let new_width  = (self.original_image.width()  as f32 * self.zoom_state) as u32;
+        let new_height = (self.original_image.height() as f32 * self.zoom_state) as u32;
         self.resize(new_width, new_height)?;
-
         Ok(())
     }
 
