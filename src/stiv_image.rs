@@ -77,15 +77,14 @@ impl StivImage {
 
     fn resize(&mut self, new_width_px: u32, new_height_px: u32) -> anyhow::Result<()> {
         let src_rgb = self.original_image.to_rgb8();
-        //let src_rgb = self.displayed_image.to_rgb8(); this might be faster, I dunno. But it looks
-        //worse
+        //let src_rgb = self.displayed_image.to_rgb8(); this might be faster, I dunno. But it looks worse
 
         let src = fir::images::ImageRef::new(
             src_rgb.width(),
             src_rgb.height(),
             src_rgb.as_raw(),
             fir::PixelType::U8x3,
-        ).unwrap();
+        )?;
 
         let mut dst = FirImage::new(new_width_px, new_height_px, fir::PixelType::U8x3);
 
@@ -96,8 +95,7 @@ impl StivImage {
             &mut dst,
             &fir::ResizeOptions::new()
                 .resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Lanczos3)),
-                //.resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Box)),
-        ).unwrap();
+        )?;
 
         let rgb_image = image::RgbImage::from_raw(
             new_width_px,
@@ -141,13 +139,8 @@ impl StivImage {
         let height = img_rgb.height();
         let img_rgb_raw = img_rgb.into_raw();
 
-        // ===========================//
         // Make this more obvious, somwthing like "if shm_available()"
         if let Some(shm_file) = &mut self.shm_file {
-        //    self.draw_using_shm(&stdout, &img_rgb_raw)?;
-        //} else {
-        //    self.draw_using_byte_stream(&stdout, &img_rgb_raw)?;
-
             shm_file.resize_if_needed(img_rgb_raw.len())?;
             shm_file.write_to_shm_file(&img_rgb_raw)?;
 
@@ -155,11 +148,6 @@ impl StivImage {
             let id = self.id;
             let rows = area.height - 1;
             let cols = area.width;
-            //log::info!("in upload_shm: cols, rows: {}, {}", cols, rows);
-
-            //let cmd = format!(
-            //    "\x1b_Ga=T,f=24,t=s,s={width},v={height},q=2;{path_b64}\x1b\\",
-            //);
 
             let cmd = match self.uploaded {
                 true => format!("\x1b_Ga=p,U=1,i={id},c={cols},r={rows},s={width},v={height},q=2\x1b\\"),
@@ -219,19 +207,10 @@ impl StivImage {
         if rows > area.height {
             rows = area.height;
         }
-        //let x = area.width.saturating_sub(cols) / 2;
-        //let y = area.height.saturating_sub(rows) / 2;
+
         let x = area.x + area.width.saturating_sub(cols) / 2;
         let y = area.y + area.height.saturating_sub(rows) / 2;
-        //let x = cols.saturating_sub(area.width) / 2;
-        //let y = rows.saturating_sub(area.height) / 2;
 
-        // This is not the crop area passed to the terminal in upload(), this is just the area to
-        // render unicode placeholders in.
-        // The crop area passed to the terminal on upload() can be calculated on the first zoom
-        // event by simply just
-        // Maybe set last_area to the crop area? And compare with that when setting it?
-        // x,y,w,h crop area is in pixels, though. So it is not really related to last_area.
         Rect {
             x: x,
             y: y,
@@ -293,22 +272,14 @@ impl StivImage {
         self.last_area = None;
     }
 
-    //pub fn resize_zoom_in(&mut self) -> anyhow::Result<()> {
-    //    self.zoom_state = self.zoom_state + 0.15;
-
-    //    let new_width = (self.width_px as f32 * self.zoom_state) as u32;
-    //    let new_height = (self.height_px as f32 * self.zoom_state) as u32;
-
-    //    self.resize(new_width, new_height)?;
-
-    //    Ok(())
-    //}
     pub fn resize_zoom_in(&mut self) -> anyhow::Result<()> {
         self.zoom_state += 0.15;
         // Use original_image dimensions, not width_px/height_px
         let new_width  = (self.original_image.width()  as f32 * self.zoom_state) as u32;
         let new_height = (self.original_image.height() as f32 * self.zoom_state) as u32;
+
         self.resize(new_width, new_height)?;
+
         Ok(())
     }
 

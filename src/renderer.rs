@@ -135,9 +135,7 @@ impl Renderer {
                 stiv_image.resize_zoom_in()?;
 
                 new_area = stiv_image.get_display_area_for_zoomed_img(&area);
-                log::info!("new_area, x,y: {},{}, width,height: {},{}", new_area.x, new_area.y, new_area.width, new_area.height);
                 let crop_area = stiv_image.get_crop_area_for_zoomed_img(&new_area)?;
-                log::info!("crop_area, x,y: {},{} width,height: {},{}", crop_area.x_px, crop_area.y_px, crop_area.width_px, crop_area.height_px);
 
                 {
                     let img = stiv_image.displayed_image.clone();
@@ -183,29 +181,6 @@ impl Renderer {
             },
             _ => {
                 new_area = stiv_image.get_area_adjusted_for_aspect_ratio(&area);
-
-                // So, if we have a zoom event, we have already rendered the image in the correct aspect
-                // ratio, so we can look at last_area and determine how the area should grow
-                // i.e. if last_area.width == area.width, then the area height can be grown, but not the
-                // width, and vice versa.
-                // We will need to call resize_to_fit(), but with an area that stretches outisde the
-                // visible terminal. This should be calculated in a seperate function. We don't really need
-                // to call get_area_adjusted_for_aspect_ratio() on a ZoomEvent at all.
-                // One problem is that last_area is set in upload, so it will be set to whatever is passed
-                // to that one. But ideally, I want last_area to be set to something that is inside the
-                // term window, such that I can calculate how to stretch/shrink within that term window.
-                // One area decides how the image will be resized, passed to resize_to_fit. This area
-                // can stretch outside the term window.
-                // Another area decides where the unicode placeholders will be drawn, this is the one
-                // passed to render_placeholders, and this one _cannot_ stretch outside the term window.
-                // This is the one that we compare the term window area to in order to know how the aspect
-                // ration can change when zooming in/out.
-                // Upload() takes area as argument, but it is only update last_area at the end, kinda
-                // unnessecary tbh. Just set it after the call to upload?
-                // We might just skip the regular resize_to_fit when zooming. After all, it doesn't feel
-                // right to fit the image to a constrained area when we want to zoom, it's more logical
-                // to just resize on pixel-values and just use an "area" to define an area within the
-                // terminal window (like we are using last_area now).
 
                 let area_size_changed = match stiv_image.last_area {
                     Some(last_area) => {

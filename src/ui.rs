@@ -78,8 +78,11 @@ impl Ui {
             stiv_img.cell_width_px = win_info.cell_width_px;
             stiv_img.cell_height_px = win_info.cell_height_px;
             //StivImageWidget { current_event: app.current_event }.render(*area, buffer, stiv_img);
-            let _ = app.renderer.render(stiv_img, area, buffer, &app.current_event);
-            app.current_event = StivEvent::None;
+            if let Err(_error) = app.renderer.render(stiv_img, area, buffer, &app.current_event) {
+                log::error!("Render error!");
+
+                return;
+            }
         }
     }
 
@@ -177,7 +180,7 @@ impl Ui {
 
     fn draw_gallery_cursor(&self, img_path: &String, buf: &mut Buffer) {
         let title = match Path::new(img_path).file_name() {
-            Some(filename) => &String::from(filename.to_str().unwrap()),
+            Some(filename) => &String::from(filename.to_str().unwrap_or("")),
             None => img_path
         };
 
