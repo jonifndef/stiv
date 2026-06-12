@@ -1,11 +1,9 @@
 fix zoom and pan
-fix borders with image names (both in gallery mode and single image mode)
 fix optimization, minimal copying and re-creation of objects, reasonable lifetimes (for objects, not specifically "rust lifetimes")
 fix gallery zooming
 fix rgba instead of rgb
 fix if there is only one chunk in pty transmittion (stiv_image.draw())
 fix rotate
-fix image not being centered
 fix yank image name and yank image file to clipboard
 fix gallery mode directory browser
 fix animated images
@@ -13,13 +11,11 @@ fix error handling, make error types more consistent
 fix imports, they look like crap now
 fix a nice README.md with some checkboxes and some cool logo
 fix auto-update on file change
-fix image deletions on exit
+fix a "status bar" that shows the current working directory in gallery mode
 
 Priority:
 
 1. Fix zooming in and out
-
-2. Fix transfer mode temporary file, rather than direct (stream) or shm
 
 One known bug:
 if we goto previous in single image mode, such that the cursor moves above the scroll offset, and then enter gallery mode and scroll up, we crash. That is because the scroll offset is not updated when we goto gallery mode, even if the cursor is updated.The same is probably true for goto next image in single image mode/scrolling down.
