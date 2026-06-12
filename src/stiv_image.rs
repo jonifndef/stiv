@@ -261,6 +261,21 @@ impl StivImage {
         return Ok(crop_area);
     }
 
+    pub fn crop(&mut self, area: &Rect) -> anyhow::Result<()> {
+        let display_px_w = (area.width  * self.cell_width_px)  as u32;
+        let display_px_h = (area.height * self.cell_height_px) as u32;
+
+        let x = self.displayed_image.width().saturating_sub(display_px_w)  / 2;
+        let y = self.displayed_image.height().saturating_sub(display_px_h) / 2;
+
+        let crop_w = display_px_w.min(self.displayed_image.width()  - x);
+        let crop_h = display_px_h.min(self.displayed_image.height() - y);
+
+        self.displayed_image = self.displayed_image.crop_imm(x, y, crop_w, crop_h);
+
+        Ok(())
+    }
+
     pub fn delete_from_terminal(&mut self) {
         if !self.uploaded { return; }
         let id = self.id;
@@ -274,9 +289,9 @@ impl StivImage {
 
     pub fn resize_zoom_in(&mut self) -> anyhow::Result<()> {
         self.zoom_state += 0.15;
-        // Use original_image dimensions, not width_px/height_px
-        let new_width  = (self.original_image.width()  as f32 * self.zoom_state) as u32;
-        let new_height = (self.original_image.height() as f32 * self.zoom_state) as u32;
+
+        let new_width  = (self.displayed_image.width()  as f32 * self.zoom_state) as u32;
+        let new_height = (self.displayed_image.height() as f32 * self.zoom_state) as u32;
 
         self.resize(new_width, new_height)?;
 

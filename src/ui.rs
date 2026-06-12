@@ -77,12 +77,14 @@ impl Ui {
             // was created above
             stiv_img.cell_width_px = win_info.cell_width_px;
             stiv_img.cell_height_px = win_info.cell_height_px;
-            //StivImageWidget { current_event: app.current_event }.render(*area, buffer, stiv_img);
+
             if let Err(_error) = app.renderer.render(stiv_img, area, buffer, &app.current_event) {
                 log::error!("Render error!");
 
                 return;
             }
+
+            app.current_event = StivEvent::None;
         }
     }
 
